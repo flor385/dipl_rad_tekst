@@ -1,0 +1,19 @@
+Uvod
+    Model jezika   
+    Neuronske mreze
+
+Model jezika
+    Definicija
+    Primjena
+
+Implementacije
+    Ngrami
+        Zagladjivanje
+    LRBM
+    LLBL
+
+Evaluacija
+    Setting
+    Rezultati
+
+Zakljucak

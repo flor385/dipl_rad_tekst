@@ -1,0 +1,23 @@
+\BOOKMARK [0][-]{chapter.1}{Uvod}{}% 1
+\BOOKMARK [0][-]{chapter.2}{Jezicni model}{}% 2
+\BOOKMARK [1][-]{section.2.1}{Primjena}{chapter.2}% 3
+\BOOKMARK [1][-]{section.2.2}{Probabilisticka definicija}{chapter.2}% 4
+\BOOKMARK [1][-]{section.2.3}{Nacini izvedbe}{chapter.2}% 5
+\BOOKMARK [0][-]{chapter.3}{Prebrojavanje n-grama}{}% 6
+\BOOKMARK [1][-]{section.3.1}{Zaglaivanje}{chapter.3}% 7
+\BOOKMARK [2][-]{subsection.3.1.1}{Aditivno zaglaivanje}{section.3.1}% 8
+\BOOKMARK [1][-]{section.3.2}{Implementacija}{chapter.3}% 9
+\BOOKMARK [0][-]{chapter.4}{Neuronske mre\236e}{}% 10
+\BOOKMARK [0][-]{chapter.5}{Ograniceni Boltzmannov stroj}{}% 11
+\BOOKMARK [1][-]{section.5.1}{Ucenje}{chapter.5}% 12
+\BOOKMARK [1][-]{section.5.2}{Implementacija}{chapter.5}% 13
+\BOOKMARK [0][-]{chapter.6}{Log-bilinearni model}{}% 14
+\BOOKMARK [1][-]{section.6.1}{Ucenje}{chapter.6}% 15
+\BOOKMARK [1][-]{section.6.2}{Implementacija}{chapter.6}% 16
+\BOOKMARK [0][-]{chapter.7}{Evaluacija}{}% 17
+\BOOKMARK [1][-]{section.7.1}{Kori\235teni podatci}{chapter.7}% 18
+\BOOKMARK [1][-]{section.7.2}{Nacin evaluacije}{chapter.7}% 19
+\BOOKMARK [1][-]{section.7.3}{Rezultati}{chapter.7}% 20
+\BOOKMARK [0][-]{chapter.8}{Zakljucak}{}% 21
+\BOOKMARK [0][-]{chapter*.2}{Literatura}{}% 22
+\BOOKMARK [0][-]{chapter.9}{Sa\236etak}{}% 23

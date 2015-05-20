@@ -169,7 +169,7 @@ Već je spomenuto kako je otežavajuć faktor izgradnje jezičnih modela to što
 
 Ovaj problem se rješava zaglađivanjem \engl{smoothing}. Ideja je da se u račun vjerojatnosti unese pretpostavka kako je korpus na kojem se model bazira samo uzorak jezika. Pretpostavivši da postoje mnogi \textit{n}-grami koji nisu prisutni u korpusu, ali zavređuju određenu vjerojatnost, njen račun se modificira kako bi se vjerojatnosna masa šire rasporedila. Time se disproporcije u vjerojatnostima \textit{n}-grama smanjuju, odnosno zaglađuju.
 
-Postoji više pristupa zaglađivanju, neki od popularnijih su aditivno (Laplace), Good-Turing i Knesser-Ney zaglađivanje. Aditivno zaglađivanje u pravilu daje lošije rezultate, koristi se jer je iznimno jednostavno. Druge dvije spomenute metode nisu računalno puno kompleksnije, ali nisu toliko intuitivne. Njihov opis izlazi izvan okvira ovog rada.
+Postoji više pristupa zaglađivanju, neki od popularnijih su aditivno (Laplace), Good-Turing i Knesser-Ney zaglađivanje. Aditivno zaglađivanje u pravilu daje lošije rezultate, koristi se pretežno u edukativne svrhe. Kneser-Ney zaglađivanje manje je intuitivno, ali daje odlične rezultate.
 
 \subsection{Aditivno zaglađivanje}
 
@@ -181,11 +181,49 @@ P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) = \frac{C(w_{i - (n - 1)}, ... , w_{i 
 
 Pri tome je $\alpha$ proizvoljan broj, tipično 1 ili manje, a $d$ broj svih mogućih \textit{n}-grama. Koristeći ovakvu formulaciju izbjegava se da vjerojatnost bilo kojeg \textit{n}-grama bude 0. Nedostatak ovog pristupa je to što na umjetni način svim \textit{n}-gramima povećava broj pojavljivanja za isti broj $\alpha$, bez obzira na njihovu relativnu smislenost. Modificiranjem vjerojatnosti kvalitetnijim pretpostavkama drugi oblici zaglađivanja u pravilu postižu bolje rezultate.
 
+\subsection{Kneser-Ney zaglađivanje}
+
+Prezentirano u radu CITAT, ovaj način zaglađivanja u originalu je oblik zaglađivanja oduzimanjem fiksne vrijednosti \engl{absolute discounting}. Od vjerojatnosti svakog \textit{n}-grama se oduzima određeni udio. Time nastaje "višak" vjerojatnosne mase koja se raspodjeljuje na temelju prebrojavanja \textit{n}-grama nižeg reda (manjeg parametra \textit{n}). Na primjeru vjerojatnosti trigrama, počeviši s oduzimanjem, definicija vjerojatnosti slijedi.
+
+\[
+P(w_i | w_{i - 2}, w_{i - 1}) =
+  \frac{max\left(C(w_{i - 2}, w_{i - 1}, w_i) - \delta, 0\right)}
+    {C(w_{i - 2}, w_{i - 1})} + ...
+\]
+
+Pri tome je $\delta$ vrijednost koji oduzimamo od prebrojavanja, u rasponu $\delta \in (0, 1)$. Potrebno je koristiti funkciju $max(x, 0)$ kako bi se osiguralo da vjerojatnost ne postane negativna, u slučaju kada je $C(w_{i - 2}, w_{i - 1}, w_i) < \delta$, odnosno kada je $C(...) = 0$. Preostala vjerojatnosna masa raspodjeljuje se na temelju \textit{n}-grama nižeg reda.
+
+\[
+P(w_i | w_{i - 2}, w_{i - 1}) =
+  \frac{max\left(C(w_{i - 2}, w_{i - 1}, w_i) - \delta, 0\right)}
+    {C(w_{i - 2}, w_{i - 1})} + \lambda P(w_i | w_{i - 1})
+\]
+
+Pri tome je $\lambda$ faktor koji određuje koja se količina vjerojatnosne mase bazira na \textit{n}-gramu nižeg reda. Taj faktor je određen vrijednosti $\delta$ oduzetoj od prebrojavanja. Ta vrijednost je oduzeta samo u slučajevima da je $C(w_{i - 2}, w_{i - 1}, w_i) > 0$, jer u slučaju da je dotično prebrojavanje točno $0$, funkcija $max(x, 0)$ poništava to oduzimanje. Stoga je sveukupna oduzeta masa vjerojatnosti jednaka broju situacija kada se oduzimanje provelo, pomnoženo parametrom $\delta$. Broj slučajeva kada se oduzimanje provelo je broj slučajeva kada je $C(w_{i - 2}, w_{i - 1}, w_i)$ barem $1$. Stoga je $\lambda$ definiran na sljedeći način.
+
+\[
+\lambda = \frac{\delta}{C(w_{i - 2}, w_{i - 1})} \left|\{w : C(w_{i - 2}, w_{i - 1}, w) > 0\}\right|
+\]
+
+Nazivnik u razlomku prisutan je jer je i prvi dio vjerojatnosti normaliziran istom vrijednošću. Nakon razlomka slijedi broj slučajeva kada se oduzimanje provelo. Konkretno, definiran je skup riječi $w$ za koje je broj pojavljivanja trigrama $C(w_{i - 2}, w_{i - 1}, w)$ veći od $0$, te je potom uzeta veličina tog skupa.
+
+Time je objašnjeno kako se u Kneser-Ney zaglađvanju dio vjerojatnosne mase prenosi na \textit{n}-grame nižeg reda, ali stvar tu ne završava. Kako bi se kvaliteta zaglađivanja dodatno poboljšala, procjena vjerojatnosti \textit{n}-grama nižeg reda bazirana je na "vjerojatnosti nastavljanja" \engl{continuation probability}. Koncept je sljedeći: za riječ $w$ procjenjuje se vjerojatnost nastavljanja proizvoljnih prethodnih riječi. Ta vjerojatnost smatra se proporcionalnom broju prehodnih riječi nakon kojih se pojavljuje. Intuicija se često objašnjava na primjeru bigrama \textit{"San Francisco"}. Pretpostavivši da se u korpusu teksta taj bigram pojavljuje često, vjerojatnost unigrama \textit{"Francisco"} biti će proporcionalno velika, ali je njena vjerojatnost nastavljanja mala jer se javlja isključivo nakon riječi \textit{"San"}. Ako je na temelju tog korpusa potrebno dovršiti rečenicu \textit{"Cipele popravlja \_."}, jednostavan model bi mogao na temelju vjerojatnosti unigrama preferirati riječ \textit{"Francisco"}, jer se riječ \textit{"postolar"} u korpusu pojavljuje rijeđe. Kneser-Ney korištenjem vjerojatnosti nastavljanja ne preferira riječ \textit{"Francisco"}, jer se riječ \textit{"postolar"} javlja kao nastavak većeg broja riječi, iako je u korpusu rjeđa. Matematički, vjerojatnost nastavljanja bigrama $P_{\text{cont}}$ definirana je na sljedeći način.
+
+\[
+P_{\text{cont}}(w_i | w_{i - 1}) =
+  \frac{\left|\{w_{i - 1} : C(w_{i - 1}, w_i) > 0\}\right|}
+  {\sum_{w_j \in V}\left|\{w_{j - 1} : C(w_{j - 1}, w_j) > 0\}\right|}
+\]
+
+U brojniku se javlja broj različitih riječi nakon koji se javlja $w_i$, dok se u nazivniku nalazi normalizacijska suma koja odgovara brojniku.
+
+U konačnici, Kneser-Ney zaglađivanje koristi se tako da se za \textit{n}-grame najvišeg reda koriste obične vjerojatnosti bazirane na prebrojavanju, od kojih se oduzimaju fiksne vrijednosti. Dobivenom se dodaje vjerojatnost nastavljanja \textit{n}-grama jednog reda niže, množeno faktorom $\lambda$. Pri tome se vjerojatnost nastavljanja isto tako zaglađuje Kneser-Ney metodom, čime je definirana rekurzivna jednadžba. Vjerojatnost najnižeg reda (unigrama), procjenjuje se njihovom frekvencijom. Rekurzivno definirano Kneser-Ney zaglađivanje moguće je primjeniti za proizvoljni $n$.
+
 \section{Implementacija}
 
-Praktična izvedba prebrojavanja \textit{n}-grama je konceptualno jednostavna. Tekst treba pretvoriti u \textit{n}-grame i za svaki \textit{n}-gram ustanoviti broj pojavljivanja u korpusu. Kompleksnije metode zaglađivanja mogu zahtjevati dodatne strukture podataka, ali one nisu kompliciranije za izvedbu. Jedini problem prebrojavanja \textit{n}-grama je njihova brojnost.
+Praktična izvedba prebrojavanja \textit{n}-grama je konceptualno jednostavna. Tekst treba pretvoriti u \textit{n}-grame i za svaki \textit{n}-gram ustanoviti broj pojavljivanja u korpusu. Kompleksnije metode zaglađivanja, poput Kneser-Ney, koriste dodatna prebrojavanja koja su tek nešto kompliciranija. Implementacija algoritma nije zahtjevna. Jedini problem prebrojavanja \textit{n}-grama je njihova brojnost.
 
-Već je spomenuto kako je za engleski jezik broj mogućih trigrama okvirno $27 * 10^{15}$. Ako bismo za svaki od tih trigrama pohranili broj pojavljivanja u samo dva okteta računalne memorije, bilo bi nam potrebno oko 9 milijuna \textit{terrabyte}-a memorije. Očigledno je ovo sa današnjim računalima neizvedivo. Problem je potrebno rješiti drukčije. Moramo uzeti u obzir da je većina tih trigrama iznimno malo vjerojatno i doslovce besmisleno. Oni se nikada ne javljaju u tekstu te je nepotrebno trošiti memoriju na njih. Stoga se prebrojavanje \textit{n}-grama u pravilu izvodi korištenjem rijetkih \engl{sparse} zapisa, pamte se brojevi pojavljivanja samo onih \textit{n}-grama koji su se barem jednom pojavili. Ovaj pristup uspješnije rješava problem, ali je kompliciraniji. Rijetke strukture podataka teže se implementiraju, a memorijske i brzinske performanse im ovise o brojnim čimbenicima. Kvalitetno upoznavanje takvih struktura preporučeno je pri pokušaju implementacije jezičnih modela baziranih na prebrojavanju \textit{n-grama}.
+Već je spomenuto kako je za engleski jezik broj mogućih trigrama okvirno $27 * 10^{15}$. Ako bismo za svaki od tih trigrama pohranili broj pojavljivanja u samo dva okteta računalne memorije, bilo bi nam potrebno oko 9 milijuna \textit{terrabyte}-a memorije. Očigledno je ovo sa današnjim računalima neizvedivo. Problem je potrebno rješiti drukčije. Moramo uzeti u obzir da je većina tih trigrama iznimno malo vjerojatno. Oni se nikada ne javljaju u tekstu te je nepotrebno trošiti memoriju na njih. Stoga se prebrojavanje \textit{n}-grama u pravilu izvodi korištenjem rijetkih \engl{sparse} zapisa, pamte se brojevi pojavljivanja samo onih \textit{n}-grama koji su se barem jednom pojavili. Ovaj pristup rješava problem memorijske zahtjevnosti, ali je izvedba kompliciranija. Rijetke strukture podataka mogu se implementirati na različite načine, o čemu im ovise memorijske i brzinske performanse. Kvalitetno upoznavanje rijetkih struktura podatak preporučeno je pri pokušaju implementacije jezičnih modela baziranih na prebrojavanju \textit{n-grama}.
 
 \chapter{Neuronske mreže}
 

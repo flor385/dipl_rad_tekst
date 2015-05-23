@@ -225,19 +225,116 @@ Praktična izvedba prebrojavanja \textit{n}-grama je konceptualno jednostavna. T
 
 Već je spomenuto kako je za engleski jezik broj mogućih trigrama okvirno $27 * 10^{15}$. Ako bismo za svaki od tih trigrama pohranili broj pojavljivanja u samo dva okteta računalne memorije, bilo bi nam potrebno oko 9 milijuna \textit{terrabyte}-a memorije. Očigledno je ovo sa današnjim računalima neizvedivo. Problem je potrebno rješiti drukčije. Moramo uzeti u obzir da je većina tih trigrama iznimno malo vjerojatno. Oni se nikada ne javljaju u tekstu te je nepotrebno trošiti memoriju na njih. Stoga se prebrojavanje \textit{n}-grama u pravilu izvodi korištenjem rijetkih \engl{sparse} zapisa, pamte se brojevi pojavljivanja samo onih \textit{n}-grama koji su se barem jednom pojavili. Ovaj pristup rješava problem memorijske zahtjevnosti, ali je izvedba kompliciranija. Rijetke strukture podataka mogu se implementirati na različite načine, o čemu im ovise memorijske i brzinske performanse. Kvalitetno upoznavanje rijetkih struktura podatak preporučeno je pri pokušaju implementacije jezičnih modela baziranih na prebrojavanju \textit{n-grama}.
 
-\chapter{Neuronske mreže}
+\chapter{Neuronska mreža}
 
-\chapter{Ograničeni Boltzmannov stroj}
+Umjetne neuronske mreže jedan su od često korištenih pristupa izgradnje prediktivnih modela. Osnove korištenja neuronskih mreža ovdje neće biti razjašnjene, kao uvod u to područje može se konzultirati CITAT.
+
+Jezični model može se smatrati svojevrsnim klasifikatorom. Za viđeni kontekst, model treba predvidjeti sljedeću riječ. Ako je kontekst baziran na \textit{n}-gramima, model na temelju ($n - 1$) prethodne riječi treba predvidjeti sljedeću. Ovakva interpretacija jezičnog modela jednostavno se preslika u umjetnu neuronsku mrežu, koje se često koriste za klasifikaciju. Nadalje, pošto u prirodnom jeziku više različitih riječi može opravdano slijediti nekom prethodnom kontekstu, pogodno je mrežu definirati kao "meki" klasifikator koji ne predviđa točno koja riječ slijedi, već daje vjerojatnosnu ocjenu svim riječima vokabulara.
+
+\section{Ulaz u mrežu}
+\label{sec:lnnet_input}
+Neuronske mreže kao ulaznu vrijednost primaju vektor varijabli koje mogu biti binarne, cijeli ili realni brojevi. Postavlja se pitanje kako predočiti riječ kao vektor brojeva koji se mogu dati na ulaz mreže. Riječ je jedan element skupa vokabulara. U tom smislu se svaka riječ može predočiti kao binarni vektor veličine jednake vokabularu, pri čemu su sve vrijednosti vektora $0$, osim one koja odgovara riječi koju vektor prestavlja, koja ima vrijednost $1$. Ovakav zapis jednog elementa skupa se često naziva \textit{"one-hot encoding"}.
+
+Postoji nekoliko problema s ovakvom definicijom neuronskog modela jezika. Veličina ulaznog vektora ovisi o veličini vokabulara i veličini konteksta. S obzirom na to da vokabular može sadržavati desetke tisuća riječi, ulaz u mrežu neminovno bi bio ogroman, što implicira velik broj parametara mreže, dugo treniranje i potrebu za ogromnim skupom za učenje. Nadalje, u ovakvoj definiciji u mreži ne postoji veza između sličnih riječi, pošto je svaka riječ interpretirana kao nezavisan element vokabulara. U tom smislu se riječ \textit{"automobil"} smatra jednako različitom od riječi \textit{"motocikl"} i \textit{"leptir"}, što za jezični model nije pogodno. Poželjno je da jezični model sadrži znanje o sličnosti riječi jer to povećava njegovu sposobnost generaliziranja. Ako je model uspješno naučio u kojim kontekstima se javlja riječ \textit{"automobil"}, poželjno je da u sličnim kontekstima smatra pojavljivanje riječi \textit{"motocikl"} vjerojatnijim od pojavljivanja riječi \textit{"leptir"}.
+
+Navedeni problemi prisutni su i u drugim područjima obrade prirodnog jezika, primjerice u pretraživanju. Česti pristup rješavanju ovog problema je korištenje \textit{"distribuiranih reprezentacija"} riječi CITAT. U ovom pristupu se svaka riječ predočava vektorom realnih brojeva. Ovisno o primjeni vektor može imati nekoliko desetaka do nekoliko stotina elemenata. Dvije su poželjne posljedice korištenja ovog pristupa. Prvo, veličina reprezentacije riječi ne ovisi linearno o veličini vokabulara. Drugo, slične riječi imaju slične distribuirane reprezentacije. Obje posljedice vrlo su pogodne za izgradnju neuronskog jezičnog modela, ali problem sada postaje pronalazak prikladnih distribuiranih reprezentacija svih riječi.
+
+Distribuirane reprezentacije moguće je izgraditi korištenjem latentne semantičke analize CITAT, koja se bazira na linearnoj dekompoziciji matrice pojavljivanja riječi unutar nekog niza. LSA se uspješno koristi za pretraživanje teksta, gdje je za termin pretrage potrebno pronaći relevantne dokumente. Problem pri korištenju LSA pristupa je memorijska zahtjevnost linearne dekompozicije s obzirom na količinu primjera koji se obrađuju. Kako se jezični modeli grade korištenjem što većeg korpusa, LSA nije prikladan alata. Reprezentacije je također moguće izgraditi korištenjem neuronskih mreža specijaliziranih za to CITAT Word2Vec. S obzirom na iterativnu prirodu učenja neuronskih mreža, memorijska složenost lakše se kontrolira. Konačno, moguće je učenje reprezentacija ugraditi u neuronsku mrežu koja ima neku drugu primjenu. Ovaj pristup korišten je u ovom radu.
+
+\section{Definicija mreže}
+
+Neuronski jezični model koji se evaluira definiran je na sljedeći način. Ulazni sloj mreže sastoji se od $(n - 1) d$ neurona, pri čemu je $d$ veličina distribuirane reprezentacije riječi. Vrijednosti koje se dovode na ulaz mreže su riječi \textit{n}-grama koje prethode posljednjoj, uvjetovanoj riječi. Mreža nema skrivenih slojeva. Izlaz mreže ima $|V|$ neuronapri čemu svaki neuron predstavlja jednu riječ vokabulara. Izlazni sloj definiran je kao \textit{softmax} sloj. U tom smislu je izlaz mreže vjerojatnosna distribucija posljednje riječi \textit{n}-grama, s obzirom na prethodnih $(n - 1)$ riječi. Slijedi matematična definicija opisane mreže.
+
+\begin{equation}
+\label{eq:lnnet}
+\begin{split}
+P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) 
+  & = \text{softmax}_{w_i}(d(w_{i - (n - 1)}, ... , w_{i - 1}) W + b) \\
+  & = \frac{\exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W_{w_i} + b_{w_i})}
+           {\sum_{w \in V} \exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W_{w} + b_{w})}
+\end{split}
+\end{equation}
+
+Pri tome $W$ označava matricu težina \engl{weight} mreže između $(n - 1)$ reprezentacije na ulazu i izlaznog sloja, dimenzija $(n - 1) d \times |V|$, dok $W_w$ označava vektor težina mreže između $(n - 1)$ reprezentacije na ulazu i izlaznog neurona za riječ $w$. Funkcija $d(...)$ preslikava slijed riječi $w \in V$ u vektor njihovih distribuiranih reprezentacija, a $b$ označava pristranosti \engl{bias} svih neurona izlaznog sloja, dok $b_w$ označava pristranost neurona izlaznog sloja koji odgovara riječi $w$. Funkciju $d(...)$ isto tako se može definirati kao matričnu operaciju.
+
+\begin{equation}
+\label{eq:d_func}
+d(w_1, ..., w_k) = \left[R_{w_1}, ..., R_{w_k}\right]
+\end{equation}
+
+Pri čemu je $R$ matrica distribuiranih reprezentacija \engl{representation} riječi dimenzija $|V| \times d$, a $R_w$ odgovara retku te matrice koji sadrži reprezentaciju riječi $w$.
+
+Mreža je prikazana na slici \ref{fig:nnet}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics{fig/nnet.pdf}
+\caption{Arhitektura neuronskog jezičnog modela. Pravokutnici s debljim rubovima su parametri mreže. Pravokutnici sa zaobljenim rubovima su podatci koji kroz mrežu prolaze.}
+\label{fig:nnet}
+\end{figure}
+
+Može se primjetiti kako se za sve ulazne riječi koristi ista matrica distribuiranih vektora. Time se smanjuje broj parametara mreže i pospješuje učenje reprezentacija (riječi sličnog značenja dobivaju slične reprezentacije).
 
 \section{Učenje}
 
+Mreža korištena kao model jezika tipična je unaprijedna slojevita neuronska mreža. Mreže tog tipa treniraju se korištenjem \textit{"backpropagation"} algoritma. Gradijentnim spustom se smanjuje greška na skupu za treniranje. Osnove gradijentne optimizacije i \textit{"backpropagation"} algoritma neće biti opisane u ovom radu. Informacije na tu temu su široko dostupne, primjerice u CITAT - Čupić NENR.
+
+Eventualna specifičnost neuronskog modela jezika, u odnosu na standardne unaprijedne slojevite mreže, je korištenje matrice reprezentacija $R$. Odabir retka matrice (što čini funkcija $d(...)$) nije standardna derivabilana matematička operacija. U tom smislu može se postaviti pitanje kako matricu $R$ optimirati gradijentnim spustom. Rješenje leži u tome da se matrica zapravo ne optimira u cjelosti, već se pri svakom podešavanju parametara mreže tijekom rada \textit{"backpropagation"} algoritma mjenjaju vrijednosti onih distribuiranih reprezentacija koje su u tom koraku korištene. Konkretno, reprezentacija riječi koje su bile na ulazu u mrežu.
+
+\subsection{Gradijentna optimizacija}
+
+Algoritam \textit{"backpropagation"} bazira se na gradijentnom spustu s obzirom na funkciju greške mreže. U originalu se greška minimizirala iterativno koristeći gradijent izračunat na cijelom skupu za učenje. U praksi se pokazalo kako je efikasnije podijeliti skup za učenje na manje grupe \engl{minibatch} i koristiti njih za gradijentni spust. Ekstrem ovog pristupa je podešavanje parametara mreže nakon evaluacije samo jednog primjera za učenje, što se naziva \textit{"online"} učenje. Ovaj ekstremni pristup rezultira nestabilnim gradijentom, zbog čega se mora smanjiti stopa učenja, i manjom efikasnošću korištenja računalnih resursa uslijed otežane paralelizacije. Stoga se najčešće koriste \textit{"minibatchevi"}. Konkretna veličina \textit{"minibatcha"} ovisi domeni primjene, arhitekturi mreže i načinu učenja. Ne postoji univerzalno prikladna veličina.
+
+Osim "običnog" gradijentnog spusta, postoje i modificirane inačice. One parametre mreže ne mjenjaju samo izravno za veličinu negativnog gradijenta pomnoženog stopom učenja, već gradijent ili stopu učenja modificiraju. Najjednostavniji primjer modifikacije gradijenta je korištenje "momenta", pri čemu se čuva informacija o prethodnim iznosima gradijenta, akumulirana u "moment" (analogno momentu kretanja kuglice određene mase koja se kotrlja u smjeru nagiba, ali i u smjeru trenutne brzine). Postoje mnoge inačice gradijentnog spusta. U ovom radu korištena je inačica "RMSprop" \engl{resilient mean square propagation}, opisana u CITAT.
+
+\section{Složenost mreže}
+
+Pri izgradnji jezičnog modela potrebno je voditi račun o memorijskoj i vremenskoj složenosti izrade modela zbog veličine vokabulara koji se u jeziku koristi. U neuronskim mrežama je složenost treniranja usko vezana uz broj slobodnih parametara mreže. Stoga je potrebno vidjeti u kakvoj su vezi parametri jezičnog modela i neuronske mreže.
+
+Matrica distribuiranih reprezentacija $R$ sadrži $|V| d$ parametara, matrica težina $W$ sadrži $(n - 1) d |V|$ parametara, a vektor pristranosti $|V|$ parametara. Sveukupno, mreža sadrži $(n d + 1) |V|$ parametara. Njena memorijska složenost stoga je $O(n d |V|)$. Vremenska složenost treniranja neuronske mreže ovisi o mnogim čimbenicima, ali se u ovom slučaju zbog jednostavnosti mreže može aproksimirati kao $O(n d |V|)$.
+
 \section{Implementacija}
+
+Za implementacije neuronskih mreža dostupni su mnogi alati. Većina njih je visoko optimizirana kako bi što učinkovitije koristili dostupne računalne resurse. Višeprocesorska i višejezgrena računala koriste se za paralelizaciju treniranja mreže, a sve dostupnija je i podrška za treniranje mreža koristeći visoki stupanj paralelizma grafičkih procesora. Nadalje, alati često podržavaju definiciju mreže na visokom stupnju apstrakcije i automatizirani izračun gradijenata, što olakšava implementaciju i smanjuje količinu grešaka u programskom kodu.
+
+U ovom radu za korištena je \textit{open-source} knjižnica Theano\footnote{http://deeplearning.net/software/theano/}, čije sučelje je dostupno za jezik Python\footnote{https://www.python.org/}. Odabrana je zbog fleksibilnosti definiranja modela (lako se koristi s visoke razine apstrakcije, ali omogućava i rad na nižim razinama), automatiziranog izračuna gradijenata i mogućnosti izvršvanja istog koda na centralnim i grafičkim procesorima.
 
 \chapter{Log-bilinearni model}
 
+U radu CITAT 3-new-models-Mnih predložene su tri implementacije jezičnih modela. Najuspješniji među njima je log-bilinearni model koji se stoga evaluira u ovom radu.
+
+Log-linearni prediktivni modeli CITAT su klasa modela u kojima je vjerojatnost uzorka proporcionalna eksponenciranoj linearnoj funkciji. Jednostavan primjer takvog modela je već korištena \textit{softmax} funkcija. Prikladni su za modeliranje vjerojatnosti jer eksponencijalna funkcija preslikava iz domene $\mathbb{R}$ u domenu $\mathbb{R}_{\leq 0}$, koja se lako normalizira u vjerojatnosni prostor. Istovremeno, logaritmiranje takve funkcije rezultira linearnom funkcijom (otkud ime "log-linearni modeli"), koja je pogodna za analizu i optimizaciju. Više informacija na temu log-linearnih modela može se naći u literaturi iz područja strojnog učenja CITAT.
+
+Bilinearna funkcija je funkcija dvije varijable koja je s obzirom na njih obje linearna CITAT. Log-bilinearni model korišten u CITAT definira da je vjerojatnost proporcionalna eksponenciranoj bilinearnoj funkciji.
+
+\[
+P(a, b) \propto \exp(f_{lin}(a, b))
+\]
+
+\section{Log-bilinearni jezični model}
+
+Log-bilinearna funkcija može se primjeniti za definiciju uvjetne vjerojatnosti riječi u jezičnom modelu s obzirom na kontekst. Razmatranja o načinu predstavljanja riječi iz poglavlja \ref{sec:lnnet_input} o neuronskom jezičnom modelu vrijede i za log-bilinearni model. Stoga se i u ovom modelu koriste distribuirane reprezentacije. Za kontekst definiran preko \textit{n}-grama, kakav je i dosad korišten u ovom radu, uvjetna vjerojatnost riječi ima sljedeći oblik.
+
+\begin{equation}
+P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) 
+  \propto \exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W d(w_i)^T + b_{w_i})
+\end{equation}
+
+Funkcija $d(...)$ definirana je izrazom \ref{eq:d_func}. $W$ označava matricu preslikavanja $(n - 1)$ $d$-dimenzionalne reprezentacije na ulazu u jedan $d$-dimenzionalni vektor. Nakon što je time ulazni vektor reprezentacija reduciran na $d$ dimenzija, računa se skalarni produkt s reprezentacijom uvjetovan riječi, te se dodaje pristranost za tu riječ. Dobiveni rezultat potrebno je normalizirati u distribuciju vjerojatnosti nad svim riječima vokabulara.
+
+\begin{equation}
+P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) 
+  = \frac{\exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W d(w_i)^T + b_{w_i})}
+  {\sum_{w \in V} \exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W d(w)^T + b_{w})}
+\end{equation}
+
+Iako je ova definicija vrlo slična matematičkoj definiciji neuronskog modela jezika \ref{eq:lnnet}
+
 \section{Učenje}
 
 \section{Implementacija}
+
+\chapter{Faktorizirani RBM}
 
 \chapter{Evaluacija}
 

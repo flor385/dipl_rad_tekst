@@ -262,7 +262,7 @@ Pri tome $W$ označava matricu težina \engl{weight} mreže između $(n - 1)$ re
 d(w_1, ..., w_k) = \left[R_{w_1}, ..., R_{w_k}\right]
 \end{equation}
 
-Pri čemu je $R$ matrica distribuiranih reprezentacija \engl{representation} riječi dimenzija $|V| \times d$, a $R_w$ odgovara retku te matrice koji sadrži reprezentaciju riječi $w$.
+Pri čemu je $R$ matrica distribuiranih reprezentacija \engl{representation} riječi dimenzija $|V| \times d$, a $R_w$ odgovara retku te matrice koji sadrži reprezentaciju riječi $w$. Može se primjetiti kako se za sve ulazne riječi koristi ista matrica distribuiranih vektora. Time se smanjuje broj parametara mreže i pospješuje učenje reprezentacija (riječi sličnog značenja dobivaju slične reprezentacije).
 
 Mreža je prikazana na slici \ref{fig:nnet}.
 
@@ -273,8 +273,6 @@ Mreža je prikazana na slici \ref{fig:nnet}.
 \label{fig:nnet}
 \end{figure}
 
-Može se primjetiti kako se za sve ulazne riječi koristi ista matrica distribuiranih vektora. Time se smanjuje broj parametara mreže i pospješuje učenje reprezentacija (riječi sličnog značenja dobivaju slične reprezentacije).
-
 \section{Učenje}
 
 Mreža korištena kao model jezika tipična je unaprijedna slojevita neuronska mreža. Mreže tog tipa treniraju se korištenjem \textit{"backpropagation"} algoritma. Gradijentnim spustom se smanjuje greška na skupu za treniranje. Osnove gradijentne optimizacije i \textit{"backpropagation"} algoritma neće biti opisane u ovom radu. Informacije na tu temu su široko dostupne, primjerice u CITAT - Čupić NENR.
@@ -282,6 +280,7 @@ Mreža korištena kao model jezika tipična je unaprijedna slojevita neuronska m
 Eventualna specifičnost neuronskog modela jezika, u odnosu na standardne unaprijedne slojevite mreže, je korištenje matrice reprezentacija $R$. Odabir retka matrice (što čini funkcija $d(...)$) nije standardna derivabilana matematička operacija. U tom smislu može se postaviti pitanje kako matricu $R$ optimirati gradijentnim spustom. Rješenje leži u tome da se matrica zapravo ne optimira u cjelosti, već se pri svakom podešavanju parametara mreže tijekom rada \textit{"backpropagation"} algoritma mjenjaju vrijednosti onih distribuiranih reprezentacija koje su u tom koraku korištene. Konkretno, reprezentacija riječi koje su bile na ulazu u mrežu.
 
 \subsection{Gradijentna optimizacija}
+\label{sec:nnet_grad}
 
 Algoritam \textit{"backpropagation"} bazira se na gradijentnom spustu s obzirom na funkciju greške mreže. U originalu se greška minimizirala iterativno koristeći gradijent izračunat na cijelom skupu za učenje. U praksi se pokazalo kako je efikasnije podijeliti skup za učenje na manje grupe \engl{minibatch} i koristiti njih za gradijentni spust. Ekstrem ovog pristupa je podešavanje parametara mreže nakon evaluacije samo jednog primjera za učenje, što se naziva \textit{"online"} učenje. Ovaj ekstremni pristup rezultira nestabilnim gradijentom, zbog čega se mora smanjiti stopa učenja, i manjom efikasnošću korištenja računalnih resursa uslijed otežane paralelizacije. Stoga se najčešće koriste \textit{"minibatchevi"}. Konkretna veličina \textit{"minibatcha"} ovisi domeni primjene, arhitekturi mreže i načinu učenja. Ne postoji univerzalno prikladna veličina.
 
@@ -305,7 +304,7 @@ U radu CITAT 3-new-models-Mnih predložene su tri implementacije jezičnih model
 
 Log-linearni prediktivni modeli CITAT su klasa modela u kojima je vjerojatnost uzorka proporcionalna eksponenciranoj linearnoj funkciji. Jednostavan primjer takvog modela je već korištena \textit{softmax} funkcija. Prikladni su za modeliranje vjerojatnosti jer eksponencijalna funkcija preslikava iz domene $\mathbb{R}$ u domenu $\mathbb{R}_{\leq 0}$, koja se lako normalizira u vjerojatnosni prostor. Istovremeno, logaritmiranje takve funkcije rezultira linearnom funkcijom (otkud ime "log-linearni modeli"), koja je pogodna za analizu i optimizaciju. Više informacija na temu log-linearnih modela može se naći u literaturi iz područja strojnog učenja CITAT.
 
-Bilinearna funkcija je funkcija dvije varijable koja je s obzirom na njih obje linearna CITAT. Log-bilinearni model korišten u CITAT definira da je vjerojatnost proporcionalna eksponenciranoj bilinearnoj funkciji.
+Bilinearna funkcija je funkcija dvije varijable koja je s obzirom na njih obje linearna CITAT. U skladu s tim, log-bilinearni probabilistički model definira vjerojatnost proporcionalnu eksponenciranoj bilinearnoj funkciji.
 
 \[
 P(a, b) \propto \exp(f_{lin}(a, b))
@@ -328,11 +327,28 @@ P(w_i | w_{i - (n - 1)}, ... , w_{i - 1})
   {\sum_{w \in V} \exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W d(w)^T + b_{w})}
 \end{equation}
 
-Iako je ova definicija vrlo slična matematičkoj definiciji neuronskog modela jezika \ref{eq:lnnet}
+Iako je ova definicija vrlo slična matematičkoj definiciji neuronskog modela jezika \ref{eq:lnnet}, zapravo se ne radi o mreži. Umjesto da se na temelju ulaznih riječi (konteksta) računa funkcija izlaza za $|V|$ izlaznih neurona, računa se mjera podudarnosti sa svakom riječi vokabulara.
+
+Log-bilinearni model je prikazan na slici \ref{fig:lbl}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics{fig/lbl.pdf}
+\caption{Arhitektura log-bilinearnog jezičnog modela. Pravokutnici s debljim rubovima su parametri modela. Pravokutnici sa zaobljenim rubovima su podatci koji prolaze kroz model.}
+\label{fig:lbl}
+\end{figure}
 
 \section{Učenje}
 
+Log-linearni modeli poput \textit{softmax}-a se u pravilu treniraju iterativno, gradijentnim smanjenjem funkcije greške algoritmom \textit{"backpropagation"}. Isti princip učenja primjenjiv je i na log-bilinearni model. Materijali na tu temu su široko dostupni, stoga ona neće biti razložena u ovom radu.
+
+Specifičnost jezičnog log-bilinearnog modela je istovremeno učenje parametara linearne funkcije $W$ i $b$, te matrice reprezentacija vokabulara $R$. Gradijentna optimizacija matrice $R$ općenito je već spomenuta u poglavlju \ref{sec:nnet_grad}. U log-bilinearnom modelu dodatno je zanimljivo što se matrica $R$ koristi na dva mjesta u funkciji. Prvo za dobivanje reprezentacija konteksta, a potom za podudarnost reduciranog konteksta sa svim riječima vokabulara. S obzirom na dobro poznati problem "nestajućeg gradijenta" u treniranju neuronskih mreža, odnosno općenito slojevito definiranih modela, može se očekivati da gradijenti matrice $R$ budu osjetno veći s obzirom na konačni izračun podudarnosti. U tom slučaju učenje prilagođava matricu $R$ rezultatu kompozicije, što u teoriji može smanjiti kvalitetu učenja matrice kompozicije $W$ i reprezentacija $R$ koje doprinose boljim kompozicijama. Stoga je smisleno zapitati se bi li korištenje dviju matrica reprezentacija bilo prikladnije, iako i dalje vrijede protuargumenti navedeni u poglavlju \ref{sec:nnet_grad}. Zbog vremenskih ograničenja pokušaj učenja modela korištenjem dviju reprezentacijskih matrica nije iskušan. U radu CITAT korištena je samo jedna, a pošto su dobiveni rezultati  vrlo konkurentni drugim modelima, može se zaključiti učenje modela sa samo jednom matricom $R$ funkcionira dobro.
+
 \section{Implementacija}
+
+Log-bilinearni model malo je manje uobičajen od unaprijednih neuronskih mreža. Nisu poznati alati koji bi omogućili definiranje takvog modela na visokoj razini apstrakcije dostupnoj za neuronske mreže, ali su alati za numeričku optimizaciju malo niže razine apstrakcije svejednako od velike koristi. Konkretno, postoji više komercijalnih i besplatnih alata koji omogućavaju simboličku definiciju log-bilinearnog modela, te automatizirani izračun gradijenata i optimizirani proces treniranja.
+
+Kao i za neuronski model jezika, korištena je knjižnica Theano za treniranje i evaluaciju log-bilinearnog modela. Knjižnica je korištena za automatsko izračunavanje gradijenta te optimalno treniranje modela na centralnim i grafičkim procesorima.
 
 \chapter{Faktorizirani RBM}
 

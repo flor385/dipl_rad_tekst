@@ -352,6 +352,49 @@ Kao i za neuronski model jezika, korištena je knjižnica Theano za treniranje i
 
 \chapter{Faktorizirani RBM}
 
+U radu CITAT evaluira se i faktorizirani RBM \engl{restricted Boltzmann machine} model. RBM-ovi predstavljaju zanimljivu klasu generativnih probabilističkih modela CITAT te ih stoga vrijedi spomenuti, iako su u spomenutom radu CITAT bili manje uspješni od log-bilinearnog modela.
+
+RBM je dvoslojni probabilistički model. Prvi, vidljivi, sloj sadrži binarne ili mulitinomijalne varijable, dok drugi sloj predstavlja latentne varijable isključivo binarnog tipa. Vjerojatnost stanja cjelokupne mreže definirana je kao eksponencirana negativna energija modela, kao u Boltzmannovoj distribuciji, otkud dolazi ime.
+
+\begin{equation}
+\label{eq:rbm_p}
+P(s) = \frac{\exp(-E(s))}{\sum_{s'}\exp(-E(s'))}
+\end{equation}
+
+Pri tome je vektor $s$ proizvoljno stanje svih neurona mreže, odnosno unija vidljivih neurona $v$ i skrivenih neurona $h$. Energija mreže je linearna funkcija stanja neurona. RBM je po definiciji potpuno spojeni bipartitni graf neurona vidljivog i skrivenog sloja. Energija je definirana na sljedeći način.
+
+\[
+E(s) = E(v, h) = - v W h^T  - v b_v - h b_h
+\]
+
+Pri tome je $W$ matrica težinskih veza među neuronima vidljivog i skrivenog sloja, $b_v$ pristranosti vidljivog sloja, a $b_h$ pristranosti skrivenog sloja.
+
+Sličnost s već definiranim log-bilinearnim i \textit{softmax} modelom je očita. Što RBM čini specifičnim je to da su neuroni mreže probabilistički, a ne deterministički. Vjerojatnost binarne aktivacije vidljivog neurona $v$ (preuzimanja stanja $0$ ili $1$) u skladu s \ref{eq:rbm_p} je definirana kao funkcija energije.
+
+\[
+ P(v_i = 1) = \frac{1}{ 1 + e^{- ( W_i h^T + b_s)}} = \sigma( W_i h + b_{vi})
+\]
+
+Pri tome $W_i$ označava redak matrice koji odgovara vidlivom neuronu $v_i$. Može se primjetiti kako vjerojatnost aktivacije vidljivog neurona ovisi samo o stanjima skrivih, a ne o ostalim vidljivim neuronima. Kao što je spomenuto, neuroni su u RBMu organizirani u bipartitan graf, dakle veze među neuronima istog sloja ne postoje. Vjerojatnost aktivacije skrivenog neurona ima identičan izraz, s obzirom na vidljive neurone. Probabilistička aktivacija neurona specifično je svojstvo RBMova i modela temeljenih na RBMova koja ima snažno regularizacijsko djelovanje. Stoga su RBMovi često korišteni za pohlepono pred-treniranje slojeva dubokih neuronskih mreža CITAT, iako se rijetko koriste u konačnim mrežama jer deterministički neuroni uglavnom daju bolje rezultate CITAT.
+
+\section{RBM jezični model}
+
+RBM je generativni probabilistički model, što znači da modelira vjerojatnosnu distribuciju pojavljivanja primjera i pripadnosti tog primjera nekoj klasi, u diskriminacijskoj primjeni. Za izradu jezičnog modela RBM ovakav model se može primjeniti za modeliranje distribucije \textit{n}-grama, odnosno uvjetnu vjerojatnost posljednje riječi \textit{n}-grama za dani konktekst od prethodnih ($n$ - 1) riječi. Vjerojatnost je definirana putem energije.
+
+\[
+E(w_{i - (n - 1)}, ... , w_i, h) =  - d(w_{i - (n - 1)}, ... , w_i) (W h + b_v) - h b_h
+\]
+
+\section{Učenje}
+
+Zbog korištenja stohastičkih neurona, točan izračun gradijenta vjerojatnosti s obzirom na parametre mreže ima eksponencijalnu složenost s obzirom na broj neurona RBMa CITAT. Ovo izrazito nepogodno svojstvo dugo vremena je onemogućavalo efikasno treniranje RBMova i sličnih grafičkih modela. Situacija se promjenila radom CITAT, koji predlaže efikasno treniranje aproksimacijom gradijenata vjerojatnosti algoritmom koji se naziva "kontrastna divergencija". Definicija algoritma i praktične implikacije izlaze izvan okvira ovog rada, detalji se mogu pronaći u mnogim dostupnim materijalima na temu, primjerice CITAT.
+
+\section{Implementacija}
+
+Grafički modeli sa stohastičkim varijablama kompleksniji su za treniranje od determinističkih modela. Razloga je više. Prvo, egzaktni izračun vjerojatnosti tipično podrazumijeva marginalizaciju po sivm mogućim stanjima skrivenog sloja CITAT. Iako se domišljatim trikom predstavljenim u CITAT ovo može obavit u linearnom vremenu (s obzirom na broj neurona skrivenog sloja), izračun može biti numerički osjetljiv. Nadalje, treniranje i korištenje modela dobiva dodatnu na računskoj složenosti korištenjem stohastičkih neurona, koji se oslanjaju na generatore nasumičnih brojeva. Što se tiče treniranja, pseudo-gradijente je potrebno računati "ručno" jer je kontrastna divergencija tek aproksimacija gradijentne optimizacije. Ovo otežava korištenje efikasnih numeričkih alata i implementaciju.
+
+Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem Theano knjižnice. Model je treniran algoritmom kontrastne divergencije. S obzirom na vremenska ograničenja, rezultirajuća implementacija je suboptimalna i relativno komplicirana. Provedeno je treniranje i evaluacija ograničene uspješnosti. Iako je RBM pokazao najlošije rezultate u radu CITAT na kojem je ovaj baziran, moguće je da je implementacija RBMa ponuđena u ovom radu neispravna, uz to što je po definiciji osjetno sporija od drugih isprobanih metoda. S obzirom na kompleksnost ovog modela i poznato slabije rezultate, čini se da je praktično najmanje zanimljiv i isplativ od evaluiranih rješenja.
+
 \chapter{Evaluacija}
 
 \section{Korpus}

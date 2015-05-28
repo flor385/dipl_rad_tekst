@@ -379,21 +379,37 @@ Pri tome $W_i$ označava redak matrice koji odgovara vidlivom neuronu $v_i$. Mo�
 
 \section{RBM jezični model}
 
-RBM je generativni probabilistički model, što znači da modelira vjerojatnosnu distribuciju pojavljivanja primjera i pripadnosti tog primjera nekoj klasi, u diskriminacijskoj primjeni. Za izradu jezičnog modela RBM ovakav model se može primjeniti za modeliranje distribucije \textit{n}-grama, odnosno uvjetnu vjerojatnost posljednje riječi \textit{n}-grama za dani konktekst od prethodnih ($n$ - 1) riječi. Vjerojatnost je definirana putem energije.
+RBM je generativni probabilistički model, što znači da modelira vjerojatnosnu distribuciju pojavljivanja primjera i pripadnosti tog primjera nekoj klasi, u diskriminacijskoj primjeni. Za izradu jezičnog modela RBM ovakav model se može primjeniti za modeliranje distribucije \textit{n}-grama, odnosno uvjetnu vjerojatnost posljednje riječi \textit{n}-grama za dani konktekst od prethodnih ($n$ - 1) riječi. Da bi se došlo do izraza za vjerojatnost, potrebno je prvo definirati energiju.
 
 \[
 E(w_{i - (n - 1)}, ... , w_i, h) =  - d(w_{i - (n - 1)}, ... , w_i) (W h + b_v) - h b_h
 \]
 
+Na temelju energije može se definirati uvjetna vjerojatnost posljednje riječi \textit{n}-grama i stanja skrivenog sloja.
+
+\[
+P(w_i, h | w_{i - (n - 1)}, ... , w_{i - 1})
+ = \frac{\exp(-E(w_{i - (n - 1)}, ... , w_i, h))}
+  {\sum_{h'} \sum_w \exp(-E(w_{i - (n - 1)}, ... , w_{i - 1}, w, h'))}
+\]
+
+Konačno, marginalizacijom po svim mogućim stanjima skrivenog sloja može se izraziti uvjetna vjerojatnost posljednje riječi \textit{n}-grama.
+
+\[
+P(w_i | w_{i - (n - 1)}, ... , w_{i - 1})
+ = \frac{\sum_h \exp(-E(w_{i - (n - 1)}, ... , w_i, h))}
+  {\sum_{h'} \sum_w \exp(-E(w_{i - (n - 1)}, ... , w_{i - 1}, w, h'))}
+\]
+
 \section{Učenje}
 
-Zbog korištenja stohastičkih neurona, točan izračun gradijenta vjerojatnosti s obzirom na parametre mreže ima eksponencijalnu složenost s obzirom na broj neurona RBMa CITAT. Ovo izrazito nepogodno svojstvo dugo vremena je onemogućavalo efikasno treniranje RBMova i sličnih grafičkih modela. Situacija se promjenila radom CITAT, koji predlaže efikasno treniranje aproksimacijom gradijenata vjerojatnosti algoritmom koji se naziva "kontrastna divergencija". Definicija algoritma i praktične implikacije izlaze izvan okvira ovog rada, detalji se mogu pronaći u mnogim dostupnim materijalima na temu, primjerice CITAT.
+Gradijentnu minimizacija funkcije greške  teško je izravno primjeniti zbog binarnih stohastičkih neurona. Kako bi se izračunali točni gradijenti greške, potrebno bi bilo evaluirati sve moguće konfiguracije binarnih neurona. Stoga se u praksi koristi algoritam "kontrastna divergencija", koji gradijentnu optimizaciju aproksimira CITAT. Definicija algoritma i praktične implikacije izlaze izvan okvira ovog rada, detalji se mogu pronaći u mnogim dostupnim materijalima na temu, primjerice CITAT.
 
 \section{Implementacija}
 
-Grafički modeli sa stohastičkim varijablama kompleksniji su za treniranje od determinističkih modela. Razloga je više. Prvo, egzaktni izračun vjerojatnosti tipično podrazumijeva marginalizaciju po sivm mogućim stanjima skrivenog sloja CITAT. Iako se domišljatim trikom predstavljenim u CITAT ovo može obavit u linearnom vremenu (s obzirom na broj neurona skrivenog sloja), izračun može biti numerički osjetljiv. Nadalje, treniranje i korištenje modela dobiva dodatnu na računskoj složenosti korištenjem stohastičkih neurona, koji se oslanjaju na generatore nasumičnih brojeva. Što se tiče treniranja, pseudo-gradijente je potrebno računati "ručno" jer je kontrastna divergencija tek aproksimacija gradijentne optimizacije. Ovo otežava korištenje efikasnih numeričkih alata i implementaciju.
+Grafički modeli sa stohastičkim varijablama kompleksniji su za treniranje od determinističkih modela. Razloga je više. Prvo, egzaktni izračun vjerojatnosti tipično podrazumijeva marginalizaciju po sivm mogućim stanjima skrivenog sloja. Iako se domišljatim trikom CITAT ovo može obavit u linearnom vremenu (s obzirom na broj neurona skrivenog sloja), izračun može biti numerički osjetljiv. Nadalje, treniranje i korištenje modela dobiva dodatno na računskoj složenosti korištenjem stohastičkih neurona, koji se oslanjaju na generatore nasumičnih brojeva. Što se tiče treniranja, parametre je potrebno podešavati "ručno" na temelju pseudo-gradijenata izračunatih kontrastnom divergencijom. Ovo otežava korištenje efikasnih numeričkih alata i implementaciju.
 
-Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem Theano knjižnice. Model je treniran algoritmom kontrastne divergencije. S obzirom na vremenska ograničenja, rezultirajuća implementacija je suboptimalna i relativno komplicirana. Provedeno je treniranje i evaluacija ograničene uspješnosti. Iako je RBM pokazao najlošije rezultate u radu CITAT na kojem je ovaj baziran, moguće je da je implementacija RBMa ponuđena u ovom radu neispravna, uz to što je po definiciji osjetno sporija od drugih isprobanih metoda. S obzirom na kompleksnost ovog modela i poznato slabije rezultate, čini se da je praktično najmanje zanimljiv i isplativ od evaluiranih rješenja.
+Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem Theano knjižnice. Model je treniran algoritmom kontrastne divergencije. S obzirom na vremenska ograničenja, rezultirajuća implementacija je suboptimalna i komplicirana u odnosu na druge evaluirane modele. Provedeno je treniranje i evaluacija ograničene uspješnosti. Iako je RBM pokazao najlošije rezultate u radu CITAT na kojem je ovaj baziran, moguće je da je implementacija RBMa ponuđena u ovom radu neispravna, uz to što je po definiciji osjetno sporija od drugih isprobanih metoda. S obzirom na kompleksnost ovog modela i poznato slabije rezultate, čini se da je praktično najmanje zanimljiv i isplativ od evaluiranih rješenja.
 
 \chapter{Evaluacija}
 

@@ -413,11 +413,46 @@ Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem The
 
 \chapter{Evaluacija}
 
+
 \section{Korpus}
 
 \section{Metodologija}
 
+Svrha jezičnog modela je ocjena sukladnosti neviđenog teksta i korpusa nad kojim je treniran. Za ocjenjivanje uspješnosti modela vrijede isti koncepti koji se primjenjuju u strojnom učenju općenjito. Ukratko, model je potrebno evaluirati korištenjem podataka koji su došli iz iste distribucije kao i podatci s kojima je model treniran, ali istovremeno oni moraju biti nezavisni. U skladu s tim, tipičan pristup evaluaciji je da se cjelokupni skup podataka dostupan za implementaciju modela podijeli da skup za treniranje, i skup za testiranje. Veličina ispitnog skupa ovisi o modelu, primjeni i količini dostupnih podataka. Pošto se jezični modeli tipično treniraju nad vrlo velikim korpusima, podataka u pravilu ima dovoljno. Stoga se za ispitni skup odvaja okvirno 5-10 posto svih podataka, dovoljno da bi ispitni skup imao sličnu distribuciju kao cijeli korpus, ali bez da se model zakine za previše podataka za učenje.
+
 \section{Mjera uspješnosti jezičnog modela}
+
+Za evaluaciju uspješnosti prediktivnih modela koriste se standardizirane mjere. Uobičajeno je za klasifikaciju koristiti mjeru točnosti predikcije nad ispitnim skupom. Točnost je udio primjera ispitnog skupa kojima je model dodjielio prikladnu oznaku klase. Za situacije kada svaka klasa nije podjednako zastupljena u skupu za treniranje, prikladnija je F mjera uspješnosti CITAT, koja stavlja jednaki naglasak na svaku klasu, bez obzira na njenu zastupljenost.
+
+Navedene mjere nisu prikladne za ocjenu jezičnih modela zbog ambivalentnosti koja je jeziku inherentna. Za ilustraciju, konteksta \textit{"Znaš da volim..."} smisleno mogu nastaviti riječi \textit{"cirkus"}, \textit{"mrkvu"}, \textit{"skakati"} i brojne druge. Bilo bi stoga neispravno jezični model ocjeniti neuspješnim ako je kao nastavak predvidio riječ \textit{"automobile"}, a u ispitnom skupu je dati kontekst nastavljen s riječi \textit{"motocikle"}. Istovremeno, može se očekivati od modela da ipak neku zamjetnu vjerojatnnost za dani kontekst dodijeli i riječi \textit{"motocikle"}. Stoga se ocjenjuje upravo ta vjerojatnost.
+
+Najčešće korištena mjera uspješnosti jezičnog modela je \textit{"perplexity"} (u prijevodu \textit{"zbrka"}, \textit{"zbunjenost"}). Matematička definicija mjere za distribuciju diskretne varjable slijedi.
+
+\[
+\mathcal{P} = b^{- \sum_x p(x) log_b q(x)}
+\]
+
+Pri tome je $p(x)$ istinska vjerojatnost pojavljivanja \textit{n}-grama $x$, $q(x)$ predikcija vjerojatnosti za $x$ od strane modela, $b$ baza logaritma (tipično se koriste $2$ ili baza prirodnog logaritma $e$), a $H(p)$ je entropija vjerojatnosne distribucije, mjera često korištena u teoriji informacije. Unutar ovog rada korištena je baza prirodnog logaritma $e$.
+
+\[
+\mathcal{P} = \exp\left(- \sum_x p(x) \ln q(x) \right)
+\]
+
+Kada se ova mjera koisti na skupu za testiranje u pravilu se pretpostavlja da je vjerojatnost primjera $p(x)$ jednaka udjelu tog primjera u skupu za testiranje, odnosno da je $p(x) = 1 - N_t$, gdje je $N_t$ broj primjera u testnom skupu.
+
+\[
+\mathcal{P} = \exp\left(- \sum_x \frac{1}{N_t} \ln q(x) \right)
+\]
+
+Konačni izraz za evaluacijsku mjeru, koji koristi uvjetnu vjerojatnost pojavljivanja riječi, tada je definiran na sljedeći način.
+
+\[
+\mathcal{P} = \exp\left(- \frac{1}{N_t} \sum_{w_{i - (n - 1)}, ..., w_n}  \ln P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) \right)
+\]
+
+Ovako definirana mjera uspješnosti modela može se interpretirati na sljedeći način. Poželjno je da model primjer $w_{i - (n - 1)}, ..., w_n$ iz ispitnog skupa ocijeni sa što većom vjerojatnošću. Logaritam te vjerojatnosti ju preslikava u interval $(- \infty, 0)$. Uprosječen logaritam vjerojatnosti po svim primjerima ispitnog skupa naglašava niske vjerojatnosti, odnosno loše procjene modela. Eksponenciranjem negativnog prosjeka mjera se vraća iz logaritamskog u vjerojatnosni prostor. Konačna brojka stoga označava obrnutu prosječnu procjenu vjerojatnosti \textit{n}-grama modela, odnosno koliko je model "nesiguran" da riječ $w_n$ smisleno nastavlja kontekst $w_{i - (n - 1)}, ... , w_{i - 1}$. Dakle, dobar model ima malu mjeru \textit{perplexity}.
+
+
 
 \section{Rezultati}
 

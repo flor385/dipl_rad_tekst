@@ -413,9 +413,6 @@ Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem The
 
 \chapter{Evaluacija}
 
-
-\section{Korpus}
-
 \section{Metodologija}
 
 Svrha jezičnog modela je ocjena sukladnosti neviđenog teksta i korpusa nad kojim je treniran. Za ocjenjivanje uspješnosti modela vrijede isti koncepti koji se primjenjuju u strojnom učenju općenjito. Ukratko, model je potrebno evaluirati korištenjem podataka koji su došli iz iste distribucije kao i podatci s kojima je model treniran, ali istovremeno oni moraju biti nezavisni. U skladu s tim, tipičan pristup evaluaciji je da se cjelokupni skup podataka dostupan za implementaciju modela podijeli da skup za treniranje, i skup za testiranje. Veličina ispitnog skupa ovisi o modelu, primjeni i količini dostupnih podataka. Pošto se jezični modeli tipično treniraju nad vrlo velikim korpusima, podataka u pravilu ima dovoljno. Stoga se za ispitni skup odvaja okvirno 5-10 posto svih podataka, dovoljno da bi ispitni skup imao sličnu distribuciju kao cijeli korpus, ali bez da se model zakine za previše podataka za učenje.
@@ -453,8 +450,70 @@ Konačni izraz za evaluacijsku mjeru, koji koristi uvjetnu vjerojatnost pojavlji
 Ovako definirana mjera uspješnosti modela može se interpretirati na sljedeći način. Poželjno je da model primjer $w_{i - (n - 1)}, ..., w_n$ iz ispitnog skupa ocijeni sa što većom vjerojatnošću. Logaritam te vjerojatnosti ju preslikava u interval $(- \infty, 0)$. Uprosječen logaritam vjerojatnosti po svim primjerima ispitnog skupa naglašava niske vjerojatnosti, odnosno loše procjene modela. Eksponenciranjem negativnog prosjeka mjera se vraća iz logaritamskog u vjerojatnosni prostor. Konačna brojka stoga označava obrnutu prosječnu procjenu vjerojatnosti \textit{n}-grama modela, odnosno koliko je model "nesiguran" da riječ $w_n$ smisleno nastavlja kontekst $w_{i - (n - 1)}, ... , w_{i - 1}$. Dakle, dobar model ima malu mjeru \textit{perplexity}.
 
 
+\section{Korpus}
+
+Za evaluaciju jezičnih modela implementiranih u ovom radu koristiti će se korpus iz \textit{Microsoft Research Sentence Completion Challenge} CITAT (u nastavku MRSCC). Zadak u MRSCC je izgraditi jezični model koji za svaku od 1040 rečenica testnog skupa odabire točnu riječ koja rečenicu kompletira, između pet ponuđenih. Rečenice su sve uzete iz Sir Arthur Conan Doyle-ovog serijala o detektivu Sherlocku Holmesu. U svakoj rečenici je za jednu riječ osmišljeno četiri alternativne, koje su sintaktički ispravne, ali semantički neispravne. Primjer jedne rečenice i ponuđenih alternativa slijedi.
+
+\begin{enumerate} 
+\item{The king \textbf{landed} at him in amazement.}
+\item{The king \textbf{rejoiced} at him in amazement.}
+\item{The king \textbf{smiled} at him in amazement.}
+\item{The king \textbf{knocked} at him in amazement.}
+\item{The king \textbf{stared} at him in amazement.}
+\end{enumerate}
+
+U navedenom primjeru najsmislenija je posljednja rečenica (\textit{"stared"}). Treća rečenica (\textit{"smiled"}) je donekle smislena, dok ostale nisu. Vidljivo je kako je zadatak iz MRSCC vrlo zanimljiv. Čovjek koji dobro govori engleski jezik lako zadatak riješi s točnošću preko 90\%. Istovremeno je za računalo zadatak iznimno težak, jer se bazira na semantičkom povezivanju koncepata i tumačenju konteksta rečenice. U trenutku pisanja svi računalni jezični modeli na MRSCC testu postižu točnost ispod 60\% CITAT.
+
+Za MRSCC je propisan i točno definiran korpus teksta nad kojim je dozvoljeno graditi model. Time se osigurava da sve implementacije imaju iste početne uvjete. Primjerice, nije dozvoljeno koristiti javno dostupne Google \textit{n}-grame CITAT, jer su oni pobrojani iz puno većeg korpusa teksta, koji možda čak čak obuhvaća rečenice iz skupa za testiranje. Propisani korpus se sastoji od 522 književna djela (pretežno romana) engleskog govornog područja iz istog vremenskog perioda u kojem je pisao Conan Doyle (19.\ stoljeće). Cijeli korpus sadrži oko 50 milijuna riječi, a preuzet je sa stranica Guttenberg projekta\footnote{https://www.gutenberg.org/}, gdje su korištena djela dostupna u cijelosti, bez legalnih restrikcija.
+
+Unutar ovog rada jezični modeli će biti evaluirani primarno korištenjem mjere \textit{"perplexity"} na ispitnom skupu uzetom iz samog skupa za treniranje. Tek će sekundarna evaluacija biti na MRSCC. Razlog je to što cijeli korpus of 50 milijuna riječi zahtjeva računalne resurse i vrijeme za treniranje koji za pisanje ovog diplomskog rada nisu dostupni. Moguće je implementirati modele koji se treniraju nad podskupom od 20 romana (od dostupnih 522), odnosno 1.8 (od dostupnih 50) milijuna riječi. Stoga je nemoguće rezultate testiranja uspoređivati sa rezultatima modela treniranih nad cijelim MRSCC korpusom, od primarnog interesa je realtivna usporedba različitih pristupa izgradnji jezičnih modela.
+
+\section{Predprocesiranje i normalizacija teksta}
+
+Korpus za treniranje dostupan je u obliku u kojem je obljavljen u sklopu Guttenberg projekta. Potrebno je pročistiti ga kako bi se dobio tekst prikladan za izgradnju jezičnog modela. Prvo su maknuta zaglavlja i ostali dodatci samog Guttenberg projekta, pošto oni nisu dio originalnog teksta. Brojevi pisani znamenkama se zamjenjuju posebnim tokenom. Potom se tekst dijeli na rečenice i riječi korištenjem knjižnice za procesiranje prirodnog jezika SpaCy\footnote{https://honnibal.github.io/spaCy/}. Rezultat su riječi grupirane u rečenice, pri čemu riječ sadržava samo slova, bez interpunkcije i praznina.
+
+U svakom većem korpusu teksta je razdioba korištenja riječi slična. Mali broj riječi se koristi velik broj puta (to su tipično denominatori, zamjenice itd.), dio riječi je učestao ali ne brojan (često korištene imenice, glagoli i pridjevi), te je konačno velik broj riječi korišten samo nekoliko puta. Pošto računalna složenost svih jezičnih modela raste s veličinom vokabulara, tipično se riječi malog broja pojavljivanja ignoriraju, odnosno zamjenjuju jednim tokenom koji ih predstavlja sve. Osim smanjenja vokabulara, time se iz korpusa pročisti i dobar dio krivo napisanih riječi. Na korištenom podskupu MRSCC korpusa kriterij korištenja riječi je da se pojavila barem 5 puta, u barem 2 književna djela. Time je vokabular od preko 37 tisuća riječi smanjen na manje od 13 tisuća, skoro trostruko, a da pri tome odbačene riječi predstavljaju samo 4.5 posto korpusa.
+
+Osim odbacivanja malo korištenih riječi, tekst se često normalizira po pitanju morfološke varijacije. Za velik broj primjena jezičnih modela nije bitno primjerice glagosko vrijeme, stoga je poželjno da se, u domeni engleskog jezika, riječi \textit{"walk"}, \textit{"walks"} i \textit{"walked"} tretiraju kao ista riječ. To povećava broj primjera u kojem jezični model vidi glagol \textit{"walk"}, što omogućava bolju generalizaciju. Naravno, postoje primjene jezičnih modela (automatsko prevođenje, provjera ispravnosti teksta) u kojima su distinkcije po glagolskom vremenu bitne. Unutar ovog rada pretpostavljamo primjenu koja je u skladu s MRSCC. Povezivanje semantike riječi bitnije je od morfološke ispravnosti jezičnod modela.
+
+ Za takvu primjenu potrebno je obaviti normalizaciju riječi. Tipični pristupi za normalizaciju teksta su lematizacija \engl{lemmatisation} i skraćivanje riječi na korijen \engl{stemming}. Lematizacija riječ svodi na morfološki neutralan oblik iste vrste (pridjev "sjajan" se ne svodi na imenicu "sjaj" iz koje je izveden), dok skraćivanje na korijen primjenom infleksijskih pravila rezultira grubljom normalizacijom (pridjev "sjajan" biti će svedeno na korijen "sjaj"). Dodatno, ponekad se koristi još agresivniji oblik skraćivanja gdje se od svake riječi uzima samo prvih $k$ slova. Prednost ovog pristupa je da je vrlo jednostavan za implementaciju i dobro radi u jezicima s malim brojem složenih riječi, poput engleskog.
+
+ Unutar ovog rada isprobano je korištenje lematizatora knjižnice SpaCy i skraćivanje na prvih $k$ slova, pri čemu je parametar $k$ optimiziran. Inicijalno testiranje na MRSCC zadatku, korištenjem 4-grama, je pokazalo da skraćivanje na prva $4$ slova daje najbolje rezultate. Iako se može činiti kao pre-agresivan oblik normalizacije, u skladu je s Google-ovim eksperimentima\footnote{https://www.youtube.com/watch?v=nU8DcBF-qo4}. Korištenjem skraćivanja na prva 4 slova vokabular od oko 38 tisuća riječi je sveden na nešto manje od 10 tisuća prefiksa. Nakon što se primjeni odbacivanje riječi koje su se pojavile manje od pet puta ili u samo jednom romanu MRSCC korpusa, ostaje tek 5133 prefiksa. Istovremeno, manje riječi se odbacuje, iskorištenost korpusa postaje preko 99 posto. 
+
 
 \section{Rezultati}
+
+U konačnici su evaluirana četiri modela. Prva da se baziraju na prebrojavanju \textit{n}-grama uz aditivno i Kneser-Ney zaglađivanje. Treći model je neuronska mreža, a posljednji je log-bilinearni model.
+
+Podatci za treniranje su prvih dvadeset romana iz MRSCC korpusa, koji sveukupno sadrže oko 1.8 milijun riječi. Konačni broj \textit{n}-grama varira s obzirom na parametar \textit{n}, jer se \textit{n}-grami generiraju iz rečenice, nikad ne sadrže riječi iz dvije susjedne rečenice. Iz skupa za treniranje je tisuću \textit{n}-grama izdvojeno za validaciju tijekom treniranja, a pet posto (oko 90 tisuća \textit{n}-grama) za konačnu evaluaciju.
+
+Za modele zaglađenog prebrojavanja se korištenjem validacijskog skupa optimiraju parametri zaglađivanja \textit{lambda} (kod aditivnog zaglađivanja) i \textit{delta} (kod Kneser-Ney zaglađivanja). Za neuronsku mrežu i log-bilinearni model su hiperparametri modela (L2 regularizacija, veličina mini-batcha) odabrani u skladu s postojećim eksperimentima CITAT, nisu optimirani. Isto vrijedi i za parametre gradijentne optimizacije, koristi se naime RMSprop CITAT, koji veličinu gradijentnog pomaka prilagođava automatski, te rijetko zahtjeva eksplicitno podešavanje. Validacijski skup je korišten za određivanje trajanja treniranja. Model se trenira sve dok mjera \textit{perplexity} na validacijskom skupu pada za barem 1 u posljednje tri epohe.
+
+Tablica \ref{tbl:eval_perplexity} prikazuje rezultate treniranih modela na skupu za testiranje. 
+
+\begin{table}[htb]
+\caption{Rezultati evaluacije jezičnih modela mjerom \textit{perplexity} za \textit{n}-grame zaglađene aditivno i Kneser-Ney metodom, neuronsku mrežu i log-bilinearni model, po stupcima za različite vrijednosti parametra $n$.}
+\label{tbl:eval_perplexity}
+\centering
+\begin{tabular}{lccc}
+\toprule
+ & \multicolumn{3}{c}{Parametar \textit{n}} \\
+\cmidrule(r){2-4}
+Model & 3 & 4 & 5 \\
+\midrule
+Additivno &  305 & 1182 & \\
+Kneser-Ney & 72 & 121 & \\
+Neuronska mreža & 117 & 114 & 113 \\
+Log-biliner & 102 & 98 & 98 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+Trajanje LMLP, 4-grami, CPU - 981 po epohi, vs 162 na GPU
+
+
 
 \chapter{Zaključak} 
 

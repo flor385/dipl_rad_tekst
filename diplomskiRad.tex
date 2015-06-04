@@ -344,6 +344,20 @@ Log-linearni modeli poput \textit{softmax}-a se u pravilu treniraju iterativno, 
 
 Specifičnost jezičnog log-bilinearnog modela je istovremeno učenje parametara linearne funkcije $W$ i $b$, te matrice reprezentacija vokabulara $R$. Gradijentna optimizacija matrice $R$ općenito je već spomenuta u poglavlju \ref{sec:nnet_grad}. U log-bilinearnom modelu dodatno je zanimljivo što se matrica $R$ koristi na dva mjesta u funkciji. Prvo za dobivanje reprezentacija konteksta, a potom za podudarnost reduciranog konteksta sa svim riječima vokabulara. S obzirom na dobro poznati problem "nestajućeg gradijenta" u treniranju neuronskih mreža, odnosno općenito slojevito definiranih modela, može se očekivati da gradijenti matrice $R$ budu osjetno veći s obzirom na konačni izračun podudarnosti. U tom slučaju učenje prilagođava matricu $R$ rezultatu kompozicije, što u teoriji može smanjiti kvalitetu učenja matrice kompozicije $W$ i reprezentacija $R$ koje doprinose boljim kompozicijama. Stoga je smisleno zapitati se bi li korištenje dviju matrica reprezentacija bilo prikladnije, iako i dalje vrijede protuargumenti navedeni u poglavlju \ref{sec:nnet_grad}. Zbog vremenskih ograničenja pokušaj učenja modela korištenjem dviju reprezentacijskih matrica nije iskušan. U radu CITAT korištena je samo jedna, a pošto su dobiveni rezultati  vrlo konkurentni drugim modelima, može se zaključiti učenje modela sa samo jednom matricom $R$ funkcionira dobro.
 
+\section{Složenost modela}
+
+Log-bilinearni model, kao i neuronska mreža, gradijentnim spustom smanjuje grešku procjene mjenjajući parametre modela (matricu preslikavanja, pristranosti). U tom smislu je zanimljivo usporediti broj parametara log-bilinearnog modela i neuronske mreže.
+
+Matrica distribuiranih reprezentacija $R$ sadrži $|V| d$ parametara, matrica preslikavanja $W$ sadrži $(n - 1) d d$ parametara, a vektor pristranosti $d$ parametara. Sveukupno, log-bilinearni model sadrži $\left((n - 1) d + |V| + 1\right) d$ parametara. Memorijska složenost ovisi o dominantnom faktoru i stoga glasi $O(d |V|)$, što je $n$ puta manje od memorijske složenosti neuronske mreže. Isto tako, ta složenost ne ovisi o parametru $n$ (za smislene vrijednosti $n$), što znači da se veličina konteksta log-bilinearnog modela može povećavati bez da se znatno poveća memorijski zahtjevi modela.
+
+Vremensku složenost treniranja i korištenja modela isto tako je teško procjeniti, kao i kod neuronske mreže. Trajanje treniranja modela svakako ovisi o broju parametara, pa je aproksimacija vremenske složenosti kao $O(d |V|)$ opravdana. Još jedna zanimljivost ovog modela je da je složenost korištenja modela vjerojatno niža od memorijske složenosti. Iz matematičke definicije modela vidljivo je da se reprezentacije dobivaju iz matrice $R$ naprosto indeksiranjem prikladnog retka te matrice, čak nije taj redak potrebno kopirati, što je vrlo jeftina operacija. Računske operacije pri korištenju modela se dešavaju u prostoru parametara koji ovisi samo o veličini reprezentacije $d$ i veličini konteksta $n$. Ne ovise o veličini vokabulara. Stoga korištenje modela (naspram treniranja) vrlo vjerojatno ima vremensku složenost $O(d n)$, što je puno manje od vremenske složenosti korištenja neuronske mreže, aproksimirane s $O(n d |V|)$.
+
+\section{Implementacija}
+
+Za implementacije neuronskih mreža dostupni su mnogi alati. Većina njih je visoko optimizirana kako bi što učinkovitije koristili dostupne računalne resurse. Višeprocesorska i višejezgrena računala koriste se za paralelizaciju treniranja mreže, a sve dostupnija je i podrška za treniranje mreža koristeći visoki stupanj paralelizma grafičkih procesora. Nadalje, alati često podržavaju definiciju mreže na visokom stupnju apstrakcije i automatizirani izračun gradijenata, što olakšava implementaciju i smanjuje količinu grešaka u programskom kodu.
+
+U ovom radu za korištena je \textit{open-source} knjižnica Theano\footnote{http://deeplearning.net/software/theano/}, čije sučelje je dostupno za jezik Python\footnote{https://www.python.org/}. Odabrana je zbog fleksibilnosti definiranja modela (lako se koristi s visoke razine apstrakcije, ali omogućava i rad na nižim razinama), automatiziranog izračuna gradijenata i mogućnosti izvršvanja istog koda na centralnim i grafičkim procesorima.
+
 \section{Implementacija}
 
 Log-bilinearni model malo je manje uobičajen od unaprijednih neuronskih mreža. Nisu poznati alati koji bi omogućili definiranje takvog modela na visokoj razini apstrakcije dostupnoj za neuronske mreže, ali su alati za numeričku optimizaciju malo niže razine apstrakcije svejednako od velike koristi. Konkretno, postoji više komercijalnih i besplatnih alata koji omogućavaju simboličku definiciju log-bilinearnog modela, te automatizirani izračun gradijenata i optimizirani proces treniranja.
@@ -489,7 +503,9 @@ Podatci za treniranje su prvih dvadeset romana iz MRSCC korpusa, koji sveukupno 
 
 Za modele zaglađenog prebrojavanja se korištenjem validacijskog skupa optimiraju parametri zaglađivanja \textit{lambda} (kod aditivnog zaglađivanja) i \textit{delta} (kod Kneser-Ney zaglađivanja). Za neuronsku mrežu i log-bilinearni model su hiperparametri modela (L2 regularizacija, veličina mini-batcha) odabrani u skladu s postojećim eksperimentima CITAT, nisu optimirani. Isto vrijedi i za parametre gradijentne optimizacije, koristi se naime RMSprop CITAT, koji veličinu gradijentnog pomaka prilagođava automatski, te rijetko zahtjeva eksplicitno podešavanje. Validacijski skup je korišten za određivanje trajanja treniranja. Model se trenira sve dok mjera \textit{perplexity} na validacijskom skupu pada za barem 1 u posljednje tri epohe.
 
-Tablica \ref{tbl:eval_perplexity} prikazuje rezultate treniranih modela na skupu za testiranje. 
+\subsection{Vrednovanje mjerom \textit{perplexity}}
+
+Tablica \ref{tbl:eval_perplexity} prikazuje rezultate treniranih modela na skupu za testiranje, vrednovanjem mjerom \textit{perplexity}.
 
 \begin{table}[htb]
 \caption{Rezultati evaluacije jezičnih modela mjerom \textit{perplexity} za \textit{n}-grame zaglađene aditivno i Kneser-Ney metodom, neuronsku mrežu i log-bilinearni model, po stupcima za različite vrijednosti parametra $n$.}
@@ -501,21 +517,78 @@ Tablica \ref{tbl:eval_perplexity} prikazuje rezultate treniranih modela na skupu
 \cmidrule(r){2-4}
 Model & 3 & 4 & 5 \\
 \midrule
-Additivno &  305 & 1182 & \\
-Kneser-Ney & 72 & 121 & \\
+Additivno &  305 & 1182 & 2680 \\
+Kneser-Ney & 72 & 121 & 204 \\
 Neuronska mreža & 117 & 114 & 113 \\
 Log-biliner & 102 & 98 & 98 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+Najbolje rezultate daje jezični model baziran na prebrojavanju i zaglađivanju Kneser-Ney metodom. Model baziran na aditivnom zaglađivanju daje najgore rezultate, što je u skladu s očekivanjem. Vidljivo je kako rezultati modela baziranih na prebrojavanju padaju sa povećanjem parametra $n$, odnosno veličinom konteksta. Ovo je izravno povezano s već razmatranom posljedicom povećanog konteksta, u smislu sve veće rijetkosti pojavljivanja duljih \textit{n}-grama u ograničenom korpusu. Korištenjem cijelog MRSCC korpusa bi rezultati za dulje kontekste ($n \in \{5, 6\}$) svakako bili osjetno bolji, čak i bolji od rezultata kraćih ($n \in \{3, 4\}$) CITAT.
 
+Rezultati jezičnih modela baziranih na neuronskoj mreži i log-bilinearnom modelu daju dobre rezultate. Poznato je da među ta dva modela log-bilinerani radi bolje CITAT, što pokazuju i pokusi izvedeni u ovom radu. Zanimljiv aspekt ovih modela je kako njihove performanse rastu povećanjem konteksta. Razlog tomu je najvjerojatnije to što se distribuirane reprezentacije riječi u tim modelima računaju na temelju svih riječi u kontekstu. Stoga dulji kontekst modelu daje više informacije o međusobnoj sličnosti riječi te je učenje reprezentacija kvalitetnije. Istovremeno, za razliku od modela baziranih na prebrojavanju, neuronska mreža i log-bilinearni model su manje osjetljivi na rjetkost pojavljivanja duljeg konteksta, što izravno proizlazi iz sposobnosti modela za semantički slične riječi izluče slične reprezentacije.
 
-Trajanje LMLP, 4-grami, CPU - 981 po epohi, vs 162 na GPU
+Pitanje se postavlja zašto s obzirom na sve njihove prednosti, neuronska mreža i log-bilinearni model daju lošije rezultate od modela zaglađenog Kneser-Ney metodom. Razlog tomu je vrlo malen vokabular korišten za usporedbu dotičnih modela. Korištenje vrlo malog podskupa MRSCC korpusa, uz skraćivanje na prva četiri slova, rezultira iznimno malim vokabularom. Pošto su metode bazirane na prebrojavanju osjetljivije na veličinu vokabulara (jer ne koriste distribuirane reprezentacije), korištenjem većeg vokabulara za očekivati je da log-bilinearni model postigne bolje rezultate, u skladu s postojećim eksperimentima CITAT.
 
+\subsection{Uspješnost modela na MRSCC zadatku}
 
+Modeli su vrednovani i na konkretnom MRSCC zadatku odabira semantički točne riječi u rečenici, od pet ponuđenih. Mjera vrednovanja je udio točnih odabira na skupu od 1040 rečenica. Važno je napomenuti kako su rezultati koji slijede predviđeni za relativnu usporedbu korištenih modela. Usporedba s rezultatima iz drugih radova nije smislena jer je u ovom radu zbog vremenskih ograničenja korišten tek mali podskup MRSCC korpusa. Tablica \ref{tbl:eval_mrscc} prikazuje dobivene rezultate.
 
-\chapter{Zaključak} 
+\begin{table}[htb]
+\caption{Rezultati uspješnosti jezičnih modela na MRSCC zadatku.}
+\label{tbl:eval_mrscc}
+\centering
+\begin{tabular}{lccc}
+\toprule
+ & \multicolumn{3}{c}{Parametar \textit{n}} \\
+\cmidrule(r){2-4}
+Model & 3 & 4 & 5 \\
+\midrule
+Additivno &  0.19 & 0.19 & 0.19 \\
+Kneser-Ney & 0.27 & 0.27 & 0.24 \\
+Neuronska mreža & 0.23 & 0.23 & 0.22 \\
+Log-biliner & 0.25 & 0.27 & 0.27 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Rezultati na MRSCC zadatku su u skladu s rezultatima korištenjem mjere \textit{perplexity}. Prebrojavanje \textit{n}-grama korištenjem aditivnog zaglađivanja daju najlošije rezultate (jednake uspješnosti nasumičnog odabira), dok prebrojavanje korištenjem zaglađivanja Kneser-Ney i log-bilinearni model daju bolje, približno jednake rezultate. I dalje je vidljivo kako modeli bazirani na prebrojavanju rade lošije kada je kontekst dulji, a log-bilinearni model bolje. Neuronska mreža konzistentno daje osrednje rezultate.
+
+U radu unutar kojeg su se jezični modeli trenirali korištenjem cijelog MRSCC korupsa, najbolji rezultat postignut je korištenjem log-bilinearnog modela treniranog nad 10-gramima, prijavljena je 0.547 uspješnost (najbolja poznata u trenutku pisanja ovog rada). U istom radu model baziran na zaglađenom prebrojavanju \textit{n}-grama postiže 0.391 usješnost, korištenjem 4-grama. Čini se stoga da je log-bilinearni model generalno bolji, ali valja uzeti u obzir i trošak treniranja tavog modela.
+
+\subsection{Trajanje treniranja}
+
+Neuronske mreže i log-bilinearni model treniraju se iterativnom metodom gradijentnog smanjenja greške. Za velike modele (modele koji imaju velik broj slobodnih parametara) i velike skupove podataka za treniranje, učenje modela može zahtjevati veliku količnu vremena. Stoga je unutar ovog rada evaluirano i vrijeme potrebno za treniranje dotičnih modela. Modeli bazirani na prebrojavanju zahtjevaju samo jedan prolazak kroz \textit{n}-grame skupa za treniranje, i malu količinu dodatne analize. U pravilu treniranje i na slabijim modernim centralnim procesorima traje tek nekoliko minuta. Modeli bazirani na iterativnom smanjenju greške kompleksnijim algoritmima analiziraju skup za treniranje kroz veći broj iteracija (u ovom radu prosječno tridesetak iteracija). Stoga su trenirani na snažnom modernom centralnom procesoru\footnote{Intel i7-4720, 2.6GHz, 4 fizičke jezgre, 8-dretvi, 16GB RAM} (CPU), i na modernom grafičkom procesoru srednje klase\footnote{nVidia GeForce GTX 960M, 4GB RAM, 640 programabilnih CUDA jezgri} (GPU). Trajanje treniranja iterativnih modela prikazano je u tablici \ref{tbl:eval_time}.
+
+\begin{table}[htb]
+\caption{Trajanje treniranja modela, izraženo u SAT:MINUTE formatu.}
+\label{tbl:eval_time}
+\centering
+\begin{tabular}{lccc}
+\toprule
+ & \multicolumn{3}{c}{Parametar \textit{n}} \\
+\cmidrule(r){2-4}
+Model & 3 & 4 & 5 \\
+\midrule
+Prebrojavanje \textit{n}-grama CPU &  0:01 & 0:01 & 0.01 \\
+Neuronska mreža, GPU & 1:47 & 2:15 & 2:17 \\
+Neuronska mreža, CPU & 0.23 & 13:30 & 0.22 \\
+Log-bilinear GPU & 0:52 & 0:56 & 0:47 \\
+Log-bilinear CPU & 0.25 & 0.27 & 0.27 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bitno je napomenuti kako vremena treniranja ovise o mnogim čimbenicima kao što su optimalnost implementacije, kriterij zaustavljanja iterativnog treniranja, veličina minigrupe pri iterativnom treniranju, tip gradijentnog spusta koji se koristi itd. Stoga navedena vremena treba tumačiti kao vrlo okvirna, navedena su samo radi međusobne usporedbe.
+
+Vidljivo je kako je vrijeme trajanja treniranja modela koji se baziraju na prebrojavanju neusporedivo kraće od treniranja neuronskih mreža i log-bilinearnog modela. Uzme li se u obzir da model koji koristi zaglađivanje Kneser-Ney metodom postiže vrlo dobre rezultate, lošije ali usporedive s rezultatima log-bilinearnog modela, taj model ostaje kompetitivan u situacijama gdje su računalni resursi ili vrijeme treniranja ograničeni. Nadalje, vidljive su ogromne razlike između vremena treniranja korištenjem centralnog odnosno grafičkog procesora. Pri tome je bitno uzeti u obzir i to da je korišten CPU visoke klase (u vrijeme pisanja rada), a korišteni GPU više-srednje klase. Usporeba vrhunskih centralnih i grafičkih procesora rezultirala bi još većom disproporcijom. 
+
+\chapter{Zaključak}
+
+U ovom diplomskom radu vrednovani su jezični modeli izgrađeni korištenjem tri bitno različita pristupa. Prvi pristup, koji se već dugo koristi, bazira se na prebrojavanju \textit{n}-grama. Drugi pristup bazira se na neuronskoj mreži definiranoj kao klasifikator riječi koja slijedi proizvoljnom kontekstu prethodnih riječi. Treći pristup je najnoviji, bazira se na log-bilinearnom modelu koji ima znatno manji broj parametara od neuronske mreže.
+
+Evaluacija navedenih modela korištenjem podskupa korpusa \textit{Microsoft Research Sentence Completion Challenge} pokazala je kako najbolje rezultate daju model baziran na prebrojavanju i zaglađivanju Kneser-Ney metodom, i log-bilinearni model. Pri tome je pokazano da na manjem korpusu prebrojavanje daje nešto bolje rezultate, dok ispitivanja u drugim radovima pokazuju da na većem korpusu log-bilinearni model daje najbolje rezultate. Ispitano je i vrijeme potrebno za treniranje svih korištenih modela, pri čemu se pokazalo da je treniranje modela baziranih na prebrojavanju neusporedivo brže od treniranja neuronske mreže i log-bilinearnog modela. U tom smislu su modeli bazirani na prebrojavanju i dalje primjenjivi, bez obzira na relativno dugu povijest korištenja (prva implementacija je bila 1995.\ godine).
 
 \bibliography{literatura}
 \bibliographystyle{fer}

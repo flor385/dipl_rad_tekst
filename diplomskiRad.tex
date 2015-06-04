@@ -76,8 +76,15 @@
 
 \chapter{Uvod}
 
+Tema ovog diplomskog rada je jezični model baziran na neuronskoj mreži. Jezični model je računalni sustav u području obrade prirodnog jezika koji nalazi primjenu u zadatcima poput automatiziranog prevođenja, prepoznavanja govora itd. Neuronske mreže su jedan od popularnih pristupa izradi prediktivnih modela. Kako bi se jezični model temeljen na neuronskoj mreži stavio u prikladan kontekst, u ovom radu su implementirani još dva pristupa izgradnji jezičnih modela.
+
+Naglasak u radu je stavljen na pojašnjenje kako se korišteni prediktivni modeli koriste za izgradnju jezičnih modela. Objašnjavaju se prednosti i nedostatci svakog pristupa, kao i izazovi njihovog implementiranja. Modeli su definirani egzaktno, ali se ne ulazi u detalje implementacije pošto su za to dostupni brojni kvalitetni materijali. U tom smislu rad pretpostavlja da čitatelj posjeduje osnovno znanje iz područja strojnog učenja, neuronskih mreža i linearne algebre. Ovaj rad na temelju tih znanja čitatelju može razjasniti osnovne pojmove o izradi i primjeni jezičnih modela, kao i specifičnosti, prednosti i nedostatke svih evaluiranih modela. Bitno je naglasiti da su u ovom radu obrađeni tek neki od brojnih pristupa izradi jezičnih modela, rad nipošto nije iscrpan.
+
+Rad je organiziran na sljedeći način. U poglavlju \ref{sec:jezicni_modeli} se govori o jezičnom modelu općenito. Razmatra se svrha jezičnih modela, odnosno moguće primjene, te se iskazuje najčešće korištena matematička definicija modela. Sljedeća četiri poglavlja razlažu pristupe izgradnji jezičnog modela koji su evaluirani u ovom radu. U svakom od tih poglavlja je model definiran matematčki i komentirani su pristupi izgradnji, iako sami algortmi nisu ispisani. Za svaki od modela se razmatraju prednosti i nedostatci. Potom je u poglavlju \ref{sec:eval} opisan način usporedbe jezičnih modela općenito, kao i konkretno vrednovanje provedena u ovom radu. Razmotreni su rezultati vrednovanja kako bi čitatelj stekao što bolji dojam o primjenjivosti korištenih modela. U konačnici slijede zaključak i reference.
+
 
 \chapter{Jezični model}
+\label{sec:jezicni_modeli}
 
 Jezični model jedan je od ključnih elemenata računalnog procesiranja prirodnog jezika. Glavni zadatak tom računalnom sustavu je ocjenjivanje pripadnosti teksta u prirodni jezik za koji je sustav rađen. Dodatno, poželjno je da sustav između više ponuđenih može izabrati tekst koji je najviše "u duhu" jezika. Primjerice, model hrvatskog jezika trebao bi biti sposoban ocijeniti da je niz \textit{"dan je lijep"} generalno više u duhu jezika od \textit{"lijepo dana biti"}, a da niz \textit{"it's a nice day"} u dotični jezik ne pripada.
 
@@ -426,6 +433,7 @@ Grafički modeli sa stohastičkim varijablama kompleksniji su za treniranje od d
 Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem Theano knjižnice. Model je treniran algoritmom kontrastne divergencije. S obzirom na vremenska ograničenja, rezultirajuća implementacija je suboptimalna i komplicirana u odnosu na druge evaluirane modele. Provedeno je treniranje i evaluacija ograničene uspješnosti. Iako je RBM pokazao najlošije rezultate u radu CITAT na kojem je ovaj baziran, moguće je da je implementacija RBMa ponuđena u ovom radu neispravna, uz to što je po definiciji osjetno sporija od drugih isprobanih metoda. S obzirom na kompleksnost ovog modela i poznato slabije rezultate, čini se da je praktično najmanje zanimljiv i isplativ od evaluiranih rješenja.
 
 \chapter{Evaluacija}
+\label{sec:eval}
 
 \section{Metodologija}
 
@@ -559,10 +567,10 @@ U radu unutar kojeg su se jezični modeli trenirali korištenjem cijelog MRSCC k
 
 \subsection{Trajanje treniranja}
 
-Neuronske mreže i log-bilinearni model treniraju se iterativnom metodom gradijentnog smanjenja greške. Za velike modele (modele koji imaju velik broj slobodnih parametara) i velike skupove podataka za treniranje, učenje modela može zahtjevati veliku količnu vremena. Stoga je unutar ovog rada evaluirano i vrijeme potrebno za treniranje dotičnih modela. Modeli bazirani na prebrojavanju zahtjevaju samo jedan prolazak kroz \textit{n}-grame skupa za treniranje, i malu količinu dodatne analize. U pravilu treniranje i na slabijim modernim centralnim procesorima traje tek nekoliko minuta. Modeli bazirani na iterativnom smanjenju greške kompleksnijim algoritmima analiziraju skup za treniranje kroz veći broj iteracija (u ovom radu prosječno tridesetak iteracija). Stoga su trenirani na snažnom modernom centralnom procesoru\footnote{Intel i7-4720, 2.6GHz, 4 fizičke jezgre, 8-dretvi, 16GB RAM} (CPU), i na modernom grafičkom procesoru srednje klase\footnote{nVidia GeForce GTX 960M, 4GB RAM, 640 programabilnih CUDA jezgri} (GPU). Trajanje treniranja iterativnih modela prikazano je u tablici \ref{tbl:eval_time}.
+Neuronske mreže i log-bilinearni model treniraju se iterativnom metodom gradijentnog smanjenja greške. Za velike modele (modele koji imaju velik broj slobodnih parametara) i velike skupove podataka za treniranje, učenje modela može zahtjevati veliku količnu vremena. Stoga je unutar ovog rada evaluirano i vrijeme potrebno za treniranje dotičnih modela. Modeli bazirani na prebrojavanju zahtjevaju samo jedan prolazak kroz \textit{n}-grame skupa za treniranje, i malu količinu dodatne analize. U pravilu treniranje i na slabijim modernim centralnim procesorima traje tek nekoliko minuta. Modeli bazirani na iterativnom smanjenju greške kompleksnijim algoritmima analiziraju skup za treniranje kroz veći broj iteracija (u ovom radu prosječno tridesetak iteracija). Stoga su trenirani na snažnom modernom centralnom procesoru\footnote{Intel i7-4720, 2.6GHz, 4 fizičke jezgre, 8-dretvi, 16GB RAM} (CPU), i na modernom grafičkom procesoru srednje klase\footnote{nVidia GeForce GTX 960M, 4GB RAM, 640 programabilnih CUDA jezgri} (GPU). Trajanje treniranja iterativnih modela prikazano je u tablici \ref{tbl:eval_time}. Bitno je napomenuti kako vremena treniranja ovise o mnogim čimbenicima kao što su optimalnost implementacije, kriterij zaustavljanja iterativnog treniranja, veličina minigrupe pri iterativnom treniranju, tip gradijentnog spusta koji se koristi itd. Stoga navedena vremena treba tumačiti kao vrlo okvirna, navedena su samo radi međusobne usporedbe.
 
 \begin{table}[htb]
-\caption{Trajanje treniranja modela, izraženo u SAT:MINUTE formatu.}
+\caption{Trajanje treniranja modela, izraženo u SAT:MINUTE obliku.}
 \label{tbl:eval_time}
 \centering
 \begin{tabular}{lccc}
@@ -573,22 +581,25 @@ Model & 3 & 4 & 5 \\
 \midrule
 Prebrojavanje \textit{n}-grama CPU &  0:01 & 0:01 & 0.01 \\
 Neuronska mreža, GPU & 1:47 & 2:15 & 2:17 \\
-Neuronska mreža, CPU & 0.23 & 13:30 & 0.22 \\
-Log-bilinear GPU & 0:52 & 0:56 & 0:47 \\
-Log-bilinear CPU & 0.25 & 0.27 & 0.27 \\
+Neuronska mreža, CPU & 13.38 & 13:52 & 14.20 \\
+Log-bilinear GPU & 0:49 & 0:48 & 0:46 \\
+Log-bilinear CPU & 8:07 & 8:01 & 6:56 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Bitno je napomenuti kako vremena treniranja ovise o mnogim čimbenicima kao što su optimalnost implementacije, kriterij zaustavljanja iterativnog treniranja, veličina minigrupe pri iterativnom treniranju, tip gradijentnog spusta koji se koristi itd. Stoga navedena vremena treba tumačiti kao vrlo okvirna, navedena su samo radi međusobne usporedbe.
 
-Vidljivo je kako je vrijeme trajanja treniranja modela koji se baziraju na prebrojavanju neusporedivo kraće od treniranja neuronskih mreža i log-bilinearnog modela. Uzme li se u obzir da model koji koristi zaglađivanje Kneser-Ney metodom postiže vrlo dobre rezultate, lošije ali usporedive s rezultatima log-bilinearnog modela, taj model ostaje kompetitivan u situacijama gdje su računalni resursi ili vrijeme treniranja ograničeni. Nadalje, vidljive su ogromne razlike između vremena treniranja korištenjem centralnog odnosno grafičkog procesora. Pri tome je bitno uzeti u obzir i to da je korišten CPU visoke klase (u vrijeme pisanja rada), a korišteni GPU više-srednje klase. Usporeba vrhunskih centralnih i grafičkih procesora rezultirala bi još većom disproporcijom. 
+Vidljivo je kako je vrijeme trajanja treniranja modela koji se baziraju na prebrojavanju neusporedivo kraće od treniranja neuronskih mreža i log-bilinearnog modela. Uzme li se u obzir da model koji koristi zaglađivanje Kneser-Ney metodom postiže vrlo dobre rezultate, lošije ali usporedive s rezultatima log-bilinearnog modela, taj model ostaje kompetitivan u situacijama gdje su računalni resursi ili vrijeme treniranja ograničeni. Nadalje, vidljive su ogromne razlike između vremena treniranja korištenjem centralnog odnosno grafičkog procesora. Pri tome je bitno uzeti u obzir i to da je korišten CPU visoke klase (u vrijeme pisanja rada), a korišteni GPU više-srednje klase. Usporeba vrhunskih centralnih i grafičkih procesora rezultirala bi još većom disproporcijom.
+
+Zanimljivo je kako kod log-bilinearnog modela kraći kontekst rezultira sporijim treniranjem. Razlog tome je povećanje broja \textit{n}-grama kada se koristi kraći kontekst, što je posljedica toga da se \textit{n}-grami generiraju iz rečenica, bez preklapanja, što rezultira s $N - n + 1$ \textit{n}-gramom po rečenici, gdje $N$ označava broj riječi u rečenici. Tako se iz istog korpusa rečenica generira čak 4\% više trigrama nego 4-grama. Istovremeno, dodatne računske operacije potrebne za treniranje korištenjem duljeg konteksta imaju manji utjecaj zbog visokog paralelizma računanja da grafičkim karticama.
 
 \chapter{Zaključak}
 
 U ovom diplomskom radu vrednovani su jezični modeli izgrađeni korištenjem tri bitno različita pristupa. Prvi pristup, koji se već dugo koristi, bazira se na prebrojavanju \textit{n}-grama. Drugi pristup bazira se na neuronskoj mreži definiranoj kao klasifikator riječi koja slijedi proizvoljnom kontekstu prethodnih riječi. Treći pristup je najnoviji, bazira se na log-bilinearnom modelu koji ima znatno manji broj parametara od neuronske mreže.
 
 Evaluacija navedenih modela korištenjem podskupa korpusa \textit{Microsoft Research Sentence Completion Challenge} pokazala je kako najbolje rezultate daju model baziran na prebrojavanju i zaglađivanju Kneser-Ney metodom, i log-bilinearni model. Pri tome je pokazano da na manjem korpusu prebrojavanje daje nešto bolje rezultate, dok ispitivanja u drugim radovima pokazuju da na većem korpusu log-bilinearni model daje najbolje rezultate. Ispitano je i vrijeme potrebno za treniranje svih korištenih modela, pri čemu se pokazalo da je treniranje modela baziranih na prebrojavanju neusporedivo brže od treniranja neuronske mreže i log-bilinearnog modela. U tom smislu su modeli bazirani na prebrojavanju i dalje primjenjivi, bez obzira na relativno dugu povijest korištenja (prva implementacija je bila 1995.\ godine).
+
+U napretku jezičnih tehnologija, poput prepoznavanja govora i automatiziranog prevođenja, jezični modeli imaju ključnu ulogu. Uz to oni nisu ograničeni samo na tu primjenu, mogu se koristiti za analizu i klasifikaciju teksta, detekciju grešaka u tekstu i za mnoge druge zadatke. Stoga je za očekivati da će se intenzivno istraživanje i razvoj ovog područja nastaviti. Trenutno je u području strojnog učenja i izadi prediktivnih modela snažan trend korištenja dubokih i konvolucijskih neuronskih mreža. Već postoje radovi koji primjenom ovih tehnika grade još sposobnije jezične modele. Njihova sposobnost prepoznavanja semantičkih uzoraka u tekstu se polako ali neosporivo približava ljudskoj. U tom smislu su jezični modeli jedna od krucijalnih komponenata izgradnje strojeva čija bi "inteligencija" bila usporediva s ljudskom.
 
 \bibliography{literatura}
 \bibliographystyle{fer}

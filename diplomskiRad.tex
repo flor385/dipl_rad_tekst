@@ -262,82 +262,109 @@ Već je spomenuto kako je za engleski jezik broj mogućih trigrama okvirno $27 \
 
 \chapter{Neuronska mreža}
 
-Umjetne neuronske mreže jedan su od često korištenih pristupa izgradnje prediktivnih modela. Osnove korištenja neuronskih mreža ovdje neće biti razjašnjene, kao uvod u to područje može se konzultirati CITAT.
+Umjetne neuronske mreže jedan su od često korištenih pristupa izgradnji prediktivnih modela. U ovom radu se pod "neuronska mreža" podrazumijeva najjednostavniji oblik mreže: unaprijedna slojevita mreža. Jezične modele moguće je implementirati i korištenjem drukčijih arhitektura neuronskih mreža CITAT. Osnove korištenja neuronskih mreža i njihova tipologija izlaze izvan okvira ovog rada, kao uvod u područje može se konzultirati CITAT-Čupić-NENR.
 
-Jezični model može se smatrati svojevrsnim klasifikatorom. Za viđeni kontekst, model treba predvidjeti sljedeću riječ. Ako je kontekst baziran na \textit{n}-gramima, model na temelju ($n - 1$) prethodne riječi treba predvidjeti sljedeću. Ovakva interpretacija jezičnog modela jednostavno se preslika u umjetnu neuronsku mrežu, koje se često koriste za klasifikaciju. Nadalje, pošto u prirodnom jeziku više različitih riječi može opravdano slijediti nekom prethodnom kontekstu, pogodno je mrežu definirati kao "meki" klasifikator koji ne predviđa točno koja riječ slijedi, već daje vjerojatnosnu ocjenu svim riječima vokabulara.
+Jezični model može se smatrati svojevrsnim klasifikatorom. Za viđeni niz prethodnih riječi, model treba predvidjeti sljedeću riječ. Ako je kontekst baziran na \textit{n}-gramima, model na temelju ($n - 1$) prethodne riječi treba predvidjeti sljedeću. Ovakvu interpretaciju jezičnog modela jednostavno je preslikati u umjetnu neuronsku mrežu. Pošto u prirodnom jeziku više različitih riječi može smisleno nastaviti prethodne, prikladno je mrežu definirati kao "meki" klasifikator koji ne predviđa točno koja riječ slijedi, već za više riječi (moguće cijeli vokabular) računa relativnu smislenost.
+
+Izlaz iz mreže je u tom smislu jasan: poželjno je dobiti relativnu smislenost da nakon prethodnog konteksta slijedi jedna od proizvoljnog skupa riječi. Ako se za taj skup koristi cijeli vokabular, može se reći da je izlaz iz mreže vjerojatnost svake riječi vokabulara, za zadani kotekst. Iako ima više načina na koji je ovo moguće izvesti, koncept je isti.
+
+Kompliciranije je pitanje kako pojedine riječi predočiti mreži.
 
 \section{Ulaz u mrežu}
 \label{sec:lnnet_input}
-Neuronske mreže kao ulaznu vrijednost primaju vektor varijabli koje mogu biti binarne, cijeli ili realni brojevi. Postavlja se pitanje kako predočiti riječ kao vektor brojeva koji se mogu dati na ulaz mreže. Riječ je jedan element skupa vokabulara. U tom smislu se svaka riječ može predočiti kao binarni vektor veličine jednake vokabularu, pri čemu su sve vrijednosti vektora $0$, osim one koja odgovara riječi koju vektor prestavlja, koja ima vrijednost $1$. Ovakav zapis jednog elementa skupa se često naziva \textit{"one-hot encoding"}.
+Slojevite unaprijedne neuronske mreže kao ulaznu vrijednost primaju vektor brojeva. Ulaz u jezični model je ograničeni niz riječi. Potrebno je stoga niz riječi predočiti kao vektor brojeva.
 
-Postoji nekoliko problema s ovakvom definicijom neuronskog modela jezika. Veličina ulaznog vektora ovisi o veličini vokabulara i veličini konteksta. S obzirom na to da vokabular može sadržavati desetke tisuća riječi, ulaz u mrežu neminovno bi bio ogroman, što implicira velik broj parametara mreže, dugo treniranje i potrebu za ogromnim skupom za učenje. Nadalje, u ovakvoj definiciji u mreži ne postoji veza između sličnih riječi, pošto je svaka riječ interpretirana kao nezavisan element vokabulara. U tom smislu se riječ \textit{"automobil"} smatra jednako različitom od riječi \textit{"motocikl"} i \textit{"leptir"}, što za jezični model nije pogodno. Poželjno je da jezični model sadrži znanje o sličnosti riječi jer to povećava njegovu sposobnost generaliziranja. Ako je model uspješno naučio u kojim kontekstima se javlja riječ \textit{"automobil"}, poželjno je da u sličnim kontekstima smatra pojavljivanje riječi \textit{"motocikl"} vjerojatnijim od pojavljivanja riječi \textit{"leptir"}.
+\subsection{Riječ kao redni broj}
 
-Navedeni problemi prisutni su i u drugim područjima obrade prirodnog jezika, primjerice u pretraživanju. Česti pristup rješavanju ovog problema je korištenje \textit{"distribuiranih reprezentacija"} riječi CITAT. U ovom pristupu se svaka riječ predočava vektorom realnih brojeva. Ovisno o primjeni vektor može imati nekoliko desetaka do nekoliko stotina elemenata. Dvije su poželjne posljedice korištenja ovog pristupa. Prvo, veličina reprezentacije riječi ne ovisi linearno o veličini vokabulara. Drugo, slične riječi imaju slične distribuirane reprezentacije. Obje posljedice vrlo su pogodne za izgradnju neuronskog jezičnog modela, ali problem sada postaje pronalazak prikladnih distribuiranih reprezentacija svih riječi.
+Riječ je jedan element iz skupa svih riječi, vokabulara. Ako se svakoj riječi dodijeli redni broj unutar vokabulara, dobiven je jedinstveni brojevni zapis za riječ. Potrebno je razmotriti da li je ovakva konverzija riječi u broj prikladna za korištenje s neuronskom mrežom. Izlaz mreže je zapravo matematička funkcija nad ulaznim varijablama. U tom smislu se izlaz mreže mjenja ovisno o ulazu te generalno vrijedi da slične vrijednosti ulaza daju slične vrijednosti izlaza, i obrnuto. Dakle, mreža bi generalno govoreći za ulaze $(15, 3, 56)$ i $(15, 3, 57)$ trebala dati sličan izlaz, jer su ti ulazi numerički slični. Istovremeno bi za ulaze $(15, 3, 56)$ i $(0, 88, 36)$ vjerojatno dala različit izlaz jer su numerički različiti. Lako je uočiti probleme korištenja ove formulacije u jezičnom modelu. Primjerice, nizovi \textit{"sutra idem u"} i \textit{"sutra idem kući"} mogu numerički biti vrlo slični, ako su redni brojevi riječi \textit{"u"} i \textit{"kući"} bliski, ali je značenje tih nizova sasvim različito. U drugu ruku, nizovi \textit{"ogromno stablo"} i \textit{"veliko drvo"} imaju vrlo slično značenje, ali mogu biti predočeni sasvim različitim rednim brojevima vokabulara.
 
-Distribuirane reprezentacije moguće je izgraditi korištenjem latentne semantičke analize CITAT, koja se bazira na linearnoj dekompoziciji matrice pojavljivanja riječi unutar nekog niza. LSA se uspješno koristi za pretraživanje teksta, gdje je za termin pretrage potrebno pronaći relevantne dokumente. Problem pri korištenju LSA pristupa je memorijska zahtjevnost linearne dekompozicije s obzirom na količinu primjera koji se obrađuju. Kako se jezični modeli grade korištenjem što većeg korpusa, LSA nije prikladan alata. Reprezentacije je također moguće izgraditi korištenjem neuronskih mreža specijaliziranih za to CITAT Word2Vec. S obzirom na iterativnu prirodu učenja neuronskih mreža, memorijska složenost lakše se kontrolira. Konačno, moguće je učenje reprezentacija ugraditi u neuronsku mrežu koja ima neku drugu primjenu. Ovaj pristup korišten je u ovom radu.
+Problem je dakle to što komplicirane odnose značenja riječi nije moguće preslikati u jednostavan poredak cijelih brojeva. Potrebno je potražiti bolji način predočenja riječi neuronskoj mreži.
+
+\subsection{Binarni vektor}
+
+Elementi proizvoljnog skupa koji nemaju numerički poredak mogu se pretočiti binarnim vektorom. Ovaj koncept je primjenjiv na riječi u vokabularu. Svakoj riječi se dodijeli jedinstveni redni broj vokabulara. Potom se za tu riječ definira binarni vektor vektorom koji ima broj elemenata jednak veličini vokabulara. Svi elementi vektora imaju vrijednost $0$, osim elementa na poziciji koja odgovara rednom broju riječi, koji ima vrijednost $1$. Ovakav zapis jednog elementa skupa se često naziva \textit{"one-hot encoding"}.
+
+Binarni vektor je prikladniji oblik zapisa riječi za ulaz za neuronsku mrežu od rednog broja riječi. Mreža svaki od ulaza (elemenata vektora) vidi kao nezavisnu varijablu. Korištenjem binarnog vektora za zapis riječi, zapravo se mreži za svaku riječ odvojeno dovodi informacija da li se nalazi u kontekstu ili ne. Redni brojevi riječi više ne igraju ulogu. 
+
+Postoji nekoliko problema sa zapisom riječi u obliku binarnog vektora. Veličina ulaza u mrežu ovisi o veličini vokabulara i veličini konteksta. S obzirom na to da vokabular može sadržavati desetke tisuća riječi, ulaz u mrežu neminovno bi bio sukladno velik. To implicira velik broj parametara mreže, dugo treniranje i potrebu za ogromnim skupom za učenje. Nadalje, u zapisu oblika binarnog vektora ne postoji veza između sličnih riječi, pošto je svaka riječ interpretirana kao nezavisan element vokabulara. U tom smislu se riječ \textit{"automobil"} smatra jednako različitom od riječi \textit{"motocikl"} i \textit{"leptir"}, što za jezični model nije pogodno. Poželjno je da jezični model sadrži znanje o sličnosti riječi jer to povećava njegovu sposobnost generalizacije. Ako je model uspješno naučio u kojim kontekstima se javlja riječ \textit{"automobil"}, poželjno je da u sličnim kontekstima smatra pojavljivanje riječi \textit{"motocikl"} vjerojatnijim od pojavljivanja riječi \textit{"leptir"}.
+
+\subsection{Distribuirane reprezentacije}
+
+Navedeni problem numeričkog zapisa riječi prisutan je i u drugim područjima obrade prirodnog jezika, primjerice u pretraživanju. Čest pristup rješavanju ovog problema je korištenje "distribuiranih reprezentacija" \engl{distributed representations} riječi CITAT. U ovom pristupu se svaka riječ predočava vektorom realnih brojeva. Ideja je da svaki element vektora predstavlja neki apstraktni pojam, a vrijednost tog elementa za pojedinu riječ predstavlja koliko su pojam i riječ podudarni. Svaka riječ je u tom smislu definirana putem podudarnosti sa svakim od korištenih pojmova. Njeno značenje je "distribuirano" po pojmovima. Ovisno o primjeni vektor može imati nekoliko desetaka do nekoliko stotina elemenata.
+
+Dvije su dobre posljedice korištenja ovog pristupa. Prvo, veličina reprezentacije riječi ne ovisi linearno o veličini vokabulara. Drugo, riječi sličnog značenja imaju slične distribuirane reprezentacije. Obje posljedice vrlo su pogodne za izgradnju jezičnog modela temeljenog na neuronskoj mreži. Problem je pronalazak prikladnih distribuiranih reprezentacija svih riječi.
+
+Distribuirane reprezentacije moguće je izgraditi korištenjem Latentne Semantičke Analize (LSA) CITAT, koja se bazira na linearnoj dekompoziciji matrice pojavljivanja riječi unutar dokumenta. LSA se uspješno koristi za pretraživanje teksta, gdje je za termin pretrage potrebno pronaći relevantne dokumente. Problem pri korištenju LSA pristupa je memorijska zahtjevnost linearne dekompozicije s obzirom na količinu primjera koji se obrađuju. Kako se jezični modeli grade korištenjem što većeg korpusa, LSA nije prikladan alat. Reprezentacije je također moguće izgraditi korištenjem neuronskih mreža specijaliziranih za to CITAT-Word2Vec. S obzirom na iterativnu prirodu učenja neuronskih mreža, memorijska složenost lakše se kontrolira. Istovremeno, korištenjem različitih formulacija neuronskih mreža mogu se izlučiti bolje distribuirane reprezentacije CITAT-Hinton-2006. Konačno, moguće je učenje reprezentacija ugraditi u neuronsku mrežu koja ima neku drugu primjenu. Tada su dobivene reprezentacije u pravilu specijalizirane za dotičnu primjenu, te je njihovo korištenje u nekom drugom kontekstu vjerojatno neprikladno.
+
+U ovom radu se za ulaz u mrežu koriste distribuirane reprezentacije, zbog navedenih prednosti tog pristupa. Reprezenacije se uče istovremeno s jezičnim modelom.
 
 \section{Definicija mreže}
 
-Neuronski jezični model definiran je na sljedeći način. Ulazni sloj mreže sastoji se od $(n - 1) d$ neurona, pri čemu je $d$ veličina distribuirane reprezentacije riječi. Vrijednosti koje se dovode na ulaz mreže su riječi \textit{n}-grama koje prethode posljednjoj, uvjetovanoj riječi. Mreža nema skrivenih slojeva. Izlaz mreže ima $|V|$ neuronapri čemu svaki neuron predstavlja jednu riječ vokabulara. Izlazni sloj definiran je kao \textit{softmax} sloj. U tom smislu je izlaz mreže vjerojatnosna distribucija posljednje riječi \textit{n}-grama, s obzirom na prethodnih $(n - 1)$ riječi. Slijedi matematična definicija opisane mreže.
+Jezični model temeljen na neuronskoj mreži je definiran na sljedeći način. Ulazni sloj mreže sastoji se od $(n - 1) d$ neurona, pri čemu je $d$ veličina distribuirane reprezentacije riječi. Vrijednosti koje se dovode na ulaz mreže su distribuirane reprezentacije prvih $(n - 1)$ riječi \textit{n}-grama. Mreža nema skrivenih slojeva. Izlazni sloj mreže ima po jedan neuron za svaku riječ vokabulara, dakle sveukupno $|V|$ neurona. Izlazni sloj definiran je kao \textit{softmax} sloj CITAT-softmax. Stoga su izlazne vrijednosti mreže distribucija vjerojatnosti posljednje riječi \textit{n}-grama, s obzirom na prethodnih $(n - 1)$ riječi. Slijedi matematična definicija opisane mreže.
 
 \begin{equation}
 \label{eq:lnnet}
 \begin{split}
 P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) 
-  & = \text{softmax}_{w_i}(d(w_{i - (n - 1)}, ... , w_{i - 1}) W + b) \\
-  & = \frac{\exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W_{w_i} + b_{w_i})}
-           {\sum_{w \in V} \exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W_{w} + b_{w})}
+  & = \text{softmax}_{w_i}\left(\left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W + b\right) \\[1ex]
+  & = \frac{\exp\left(\left[R_{w_{i - (n - 1)}}, ... , R_{w_{i - 1}}\right] W_{w_i} + b_{w_i}\right)}
+           {\sum_{w \in V} \exp\left(\left[R_{w_{i - (n - 1)}}, ... , R_{w_{i - 1}}\right] W_{w} + b_{w}\right)}
 \end{split}
 \end{equation}
 
-Pri tome $W$ označava matricu težina \engl{weight} mreže između $(n - 1)$ reprezentacije na ulazu i izlaznog sloja, dimenzija $(n - 1) d \times |V|$, dok $W_w$ označava vektor težina mreže između $(n - 1)$ reprezentacije na ulazu i izlaznog neurona za riječ $w$. Funkcija $d(...)$ preslikava slijed riječi $w \in V$ u vektor njihovih distribuiranih reprezentacija, a $b$ označava pristranosti \engl{bias} svih neurona izlaznog sloja, dok $b_w$ označava pristranost neurona izlaznog sloja koji odgovara riječi $w$. Funkciju $d(...)$ isto tako se može definirati kao matričnu operaciju.
+Pri tome $R$ označava matricu koja distribuiranih reprezentacija riječi, koja je dimenzija $|V| \times d$, dakle svaki redak joj sadrži distribuiranu reprezentaciju jedne riječi. $R_w$ označava distribuiranu reprezentaciju riječi $w$, a $\left[R_{w_j}, ..., R_{w_k}\right]$ označava vektor koji se dobije spajanjem distribuiranih reprezentacija riječi $w_j, ..., w_k$ u jedan vektor-redak (ulaz u mrežu). $W$ označava matricu težina \engl{weight} mreže između $(n - 1)$ reprezentacije na ulazu i izlaznog sloja, dimenzija $(n - 1) d \times |V|$. $W_w$ označava vektor težina mreže između $(n - 1)$ reprezentacije na ulazu i izlaznog neurona za riječ $w$. Vektor $b$ su pristranosti \engl{bias} svih neurona izlaznog sloja, a $b_w$ pristranost neurona izlaznog sloja koji odgovara riječi $w$.
 
-\begin{equation}
-\label{eq:d_func}
-d(w_1, ..., w_k) = \left[R_{w_1}, ..., R_{w_k}\right]
-\end{equation}
-
-Pri čemu je $R$ matrica distribuiranih reprezentacija \engl{representation} riječi dimenzija $|V| \times d$, a $R_w$ odgovara retku te matrice koji sadrži reprezentaciju riječi $w$. Može se primjetiti kako se za sve ulazne riječi koristi ista matrica distribuiranih vektora. Time se smanjuje broj parametara mreže i pospješuje učenje reprezentacija (riječi sličnog značenja dobivaju slične reprezentacije).
+Može se primjetiti kako se za sve ulazne riječi koristi ista matrica distribuiranih vektora. Time se smanjuje broj parametara mreže i pospješuje učenje reprezentacija (riječi sličnog značenja dobivaju slične reprezentacije).
 
 Mreža je prikazana na slici \ref{fig:nnet}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics{fig/nnet.pdf}
+\includegraphics[scale=0.5]{fig/nnet.pdf}
 \caption{Arhitektura neuronskog jezičnog modela. Pravokutnici s debljim rubovima su parametri mreže. Pravokutnici sa zaobljenim rubovima su podatci koji kroz mrežu prolaze.}
 \label{fig:nnet}
 \end{figure}
 
 \section{Učenje}
+\label{sec:nnet_training}
 
-Mreža korištena kao model jezika tipična je unaprijedna slojevita neuronska mreža. Mreže tog tipa treniraju se korištenjem algoritma propagacije greške unatrag \engl{backpropagation algorithm}. Gradijentnim spustom se smanjuje greška na skupu za treniranje. Osnove gradijentnog spusta i algoritma propagacije greške unatrag neće biti opisane u ovom radu. Informacije na tu temu su široko dostupne, primjerice u CITAT - Čupić NENR.
+Algoritam propagacije greške unatrag bazira se na gradijentnom spustu s obzirom na funkciju greške mreže. S obzirom na broj primjera koji se koristi za izračun gradijenta u svakom koraku gradijentnog spusta, postoji par inačica učenja. Gradijent se može računati na temelju svih primjera za učenje, što se naziva grupno \engl{batch} učenje. U praksi se pokazalo kako je efikasnije podijeliti skup za učenje na mini-grupe \engl{minibatch} i koristiti njih za izračun gradijenta. Time se parametri mreže promjene više puta u svakoj epohi učenja (prolasku kroz sve primjere za učenje), što ubrzava učenje. Istovremeno, gradijent nije isti za svaku mini-grupu, što povećava otpornost na zaglavljivanje gradijentnog spusta u lokalnim minimumima. Ekstrem korištenja mini-grupa je podešavanje parametara mreže nakon evaluacije samo jednog primjera za učenje, što se naziva pojedinačno \engl{online} učenje. Ovaj ekstremni pristup rezultira nestabilnim gradijentom, zbog čega se mora smanjiti stopa učenja, i manjom efikasnošću korištenja računalnih resursa uslijed otežane paralelizacije. Stoga se najčešće koriste mini-grupe. Konkretna veličina mini-grupe ovisi domeni primjene, arhitekturi mreže i načinu učenja. Ne postoji univerzalno prikladna veličina.
 
-Eventualna specifičnost neuronskog modela jezika, u odnosu na standardne unaprijedne slojevite mreže, je korištenje matrice reprezentacija $R$. Odabir retka matrice (što čini funkcija $d(...)$) nije standardna derivabilana matematička operacija. U tom smislu može se postaviti pitanje kako matricu $R$ optimirati gradijentnim spustom. Rješenje leži u tome da se matrica zapravo ne optimira u cjelosti, već se pri svakom podešavanju parametara mreže tijekom rada algoritma propagacije greške unatrag mjenjaju vrijednosti onih distribuiranih reprezentacija koje su u tom koraku korištene. Konkretno, reprezentacija riječi koje su bile na ulazu u mrežu.
+Osim "običnog" gradijentnog spusta, koji mjenja parametre mreže za vrijednost negativnog gradijenta pomnoženog sa stopom učenja, postoje i modificirane inačice. One modificraju smjer ili veličinu gradijenta kako bi ubrzale učenje. Ta modifikacija se tipično bazira na gradijentu prethodnih koraka učenja. Najjednostavniji primjer modifikacije gradijenta je korištenje "momenta", pri čemu se gradijent kroz više koraka akumulira u "moment" kretanja (analogno momentu kretanja kuglice određene mase koja se kotrlja u smjeru nagiba, ali i u smjeru trenutne brzine). U ovom radu korištena je inačica "RMSprop" \engl{resilient mean square propagation}, opisana u CITAT. Radi se o obliku gradijentnog spusta koji od izračunatog gradijenta uzima samo smjer, bez iznosa. Količinu promjene gradijenta određuje automatski, na temelju iznosa gradijenta prethodnih koraka.
 
-\subsection{Smanjenje greške gradijentnim spustom}
-\label{sec:nnet_grad}
-
-Algoritam propagacije greške unatrag bazira se na gradijentnom spustu s obzirom na funkciju greške mreže. U originalu se greška minimizirala iterativno koristeći gradijent izračunat na cijelom skupu za učenje. Ovo se naziva grupno \engl{batch} učenje. U praksi se pokazalo kako je efikasnije podijeliti skup za učenje na manje grupe, odnosno mini-grupe \engl{minibatch} i koristiti njih za gradijentni spust. Korištenjem mini-grupa se parametri modela podešavaju češće, što ubrzava učenje. Istovremeno, gradijent nije isti za svaku mini-grupu, što povećava otpornost na zaglavljivanje gradijentnog spusta u lokalnim minimumima. Ekstrem korištenja mini-grupa je podešavanje parametara mreže nakon evaluacije samo jednog primjera za učenje, što se naziva pojedinačno \engl{online} učenje. Ovaj ekstremni pristup rezultira nestabilnim gradijentom, zbog čega se mora smanjiti stopa učenja, i manjom efikasnošću korištenja računalnih resursa uslijed otežane paralelizacije. Stoga se najčešće koriste mini-grupe. Konkretna veličina mini-grupe ovisi domeni primjene, arhitekturi mreže i načinu učenja. Ne postoji univerzalno prikladna veličina.
-
-Osim "običnog" gradijentnog spusta, postoje i modificirane inačice. One parametre mreže ne mjenjaju samo izravno za veličinu negativnog gradijenta pomnoženog stopom učenja, već gradijent ili stopu učenja modificiraju. Najjednostavniji primjer modifikacije gradijenta je korištenje "momenta", pri čemu se čuva informacija o prethodnim iznosima gradijenta, akumulirana u "moment" (analogno momentu kretanja kuglice određene mase koja se kotrlja u smjeru nagiba, ali i u smjeru trenutne brzine). Postoje mnoge inačice gradijentnog spusta. U ovom radu korištena je inačica "RMSprop" \engl{resilient mean square propagation}, opisana u CITAT.
+Specifičnost jezičnog modela baziranog na neuronskoj mreži, u odnosu na standardne unaprijedne slojevite mreže, je korištenje matrice reprezentacija $R$. Odabir reprezentacije specifične riječi (retka matrice $R$) nije standardna derivabilna matematička operacija. Može se postaviti pitanje kako matricu $R$ optimirati gradijentnim spustom. Rješenje je u tome da se matrica ne optimira u cjelosti, već se optimiraju reprezentacije riječi korištene u trenutnom koraku gradijentnog spusta, koje se tretiraju kao samostalni parametar, neovisan o matrici $R$.
 
 \section{Složenost mreže}
 
-Pri izgradnji jezičnog modela potrebno je voditi račun o memorijskoj i vremenskoj složenosti izrade modela zbog veličine vokabulara koji se u jeziku koristi. U neuronskim mrežama je složenost treniranja usko vezana uz broj slobodnih parametara mreže. Stoga je potrebno vidjeti u kakvoj su vezi parametri jezičnog modela i neuronske mreže.
+Umjetne neuronske mreže treniraju se kroz mnogo iteracija (prolazak kroz skup podataka za treniranje), u rasponu od nekoliko desetaka do nekoliko tisuća. U svakoj od njih se u svakom koraku gradijentnog spusta (kojih može biti i do nekoliko tisuća) mjenjaju svi parametri mreže. Stoga je bitno obratiti pozornost na vremensku i memorijsku složenost treniranja mreže, koje su u pravilu usko vezane uz broj parametara mreže. Stoga je potrebno razmotriti broj parametara jezičnog modela temeljenog na neuronskoj mreži.
 
-Matrica distribuiranih reprezentacija $R$ sadrži $|V| d$ parametara, matrica težina $W$ sadrži $(n - 1) d |V|$ parametara, a vektor pristranosti $|V|$ parametara. Sveukupno, mreža sadrži $(n d + 1) |V|$ parametara. Njena memorijska složenost stoga je $O(n d |V|)$. Vremenska složenost treniranja neuronske mreže ovisi o mnogim čimbenicima, ali se u ovom slučaju zbog jednostavnosti mreže može aproksimirati kao $O(n d |V|)$.
+Matrica distribuiranih reprezentacija $R$ sadrži $|V| d$ parametara, matrica težina $W$ sadrži $(n - 1) d |V|$ parametara, a vektor pristranosti $|V|$ parametara. Sveukupno, mreža sadrži $(n d + 1) |V|$ parametara. Njena memorijska složenost stoga je $O(n d |V|)$. Vremenska složenost treniranja neuronske mreže ovisi o mnogim čimbenicima, ali se u ovom slučaju zbog jednostavnosti mreže može aproksimirati kao $O(n d |V|)$. Linearna složenost s obzirom na često vrlo veliki $|V|$ nije pogodna. Za tipične vrijednost $n = 4$ i $d = 100$, te vokabular veličine $|V| = 20,000$, mreža sadrži 8 milijuna. Za neuronsku mrežu je to vrlo velik broj parametara, treniranje mreže te veličine postalo je moguće tek u posljednjih desetak godina. 
 
 \section{Implementacija}
 
-Za implementacije neuronskih mreža dostupni su mnogi alati. Većina njih je visoko optimizirana kako bi što učinkovitije koristili dostupne računalne resurse. Višeprocesorska i višejezgrena računala koriste se za paralelizaciju treniranja mreže, a sve dostupnija je i podrška za treniranje mreža koristeći visoki stupanj paralelizma grafičkih procesora. Nadalje, alati često podržavaju definiciju mreže na visokom stupnju apstrakcije i automatizirani izračun gradijenata, što olakšava implementaciju i smanjuje količinu grešaka u programskom kodu.
+Za implementaciju neuronske mreže dostupni su mnogi alati komercijalni, akademski i besplatni alati. Mnogi su visoko optimizirani kako bi što učinkovitije koristili dostupne računalne resurse. Višeprocesorska i višejezgrena računala koriste se za paralelizaciju treniranja mreže, a sve dostupnija je i podrška za treniranje mreža koristeći visoki stupanj paralelizma grafičkih procesora. Nadalje, alati često podržavaju definiciju mreže na visokom stupnju apstrakcije (na razini matematičke definicije) i automatizirani izračun gradijenata, što olakšava implementaciju, smanjuje količinu grešaka u programskom kodu i povećava optimalnost korištenja računalne snage.
 
-U ovom radu za korištena je \textit{open-source} knjižnica Theano\footnote{http://deeplearning.net/software/theano/}, čije sučelje je dostupno za jezik Python\footnote{https://www.python.org/}. Odabrana je zbog fleksibilnosti definiranja modela (lako se koristi s visoke razine apstrakcije, ali omogućava i rad na nižim razinama), automatiziranog izračuna gradijenata i mogućnosti izvršvanja istog koda na centralnim i grafičkim procesorima.
+U ovom radu je za izradu jezičnog modela temeljenog na neuronskoj mreži korištena \textit{open-source} knjižnica Theano\footnote{http://deeplearning.net/software/theano/}, čije sučelje je dostupno kroz programski jezik Python\footnote{https://www.python.org/}. Odabrana je zbog fleksibilnosti definiranja modela (lako se koristi s visoke razine apstrakcije, ali omogućava i rad na nižim razinama), automatiziranog izračuna gradijenata i mogućnosti izvođenja istog koda na centralnim i grafičkim procesorima.
 
 \chapter{Log-bilinearni model}
 
 U radu CITAT 3-new-models-Mnih predložene su tri implementacije jezičnih modela. Najuspješniji među njima je log-bilinearni model.
 
-Log-linearni prediktivni modeli CITAT su klasa modela u kojima je vjerojatnost uzorka proporcionalna eksponenciranoj linearnoj funkciji. Jednostavan primjer takvog modela je već korištena \textit{softmax} funkcija. Prikladni su za modeliranje vjerojatnosti jer eksponencijalna funkcija preslikava iz domene $\mathbb{R}$ u domenu $\mathbb{R}_{\leq 0}$, koja se lako normalizira u vjerojatnosni prostor. Istovremeno, logaritmiranje takve funkcije rezultira linearnom funkcijom (otkud ime "log-linearni modeli"), koja je pogodna za analizu i optimizaciju. Više informacija na temu log-linearnih modela može se naći u literaturi iz područja strojnog učenja CITAT.
+Log-linearni prediktivni modeli CITAT su klasa modela u kojima je vjerojatnost proporcionalna eksponenciranoj linearnoj funkciji.
+
+\[
+P(a) \propto \exp(f_{lin}(a))
+\]
+
+ Jednostavan primjer takvog modela je već korištena \textit{softmax} funkcija. Prikladni su za modeliranje vjerojatnosti jer eksponencijalna funkcija preslikava iz domene $\mathbb{R}$ u domenu $\mathbb{R}_{\geq 0}$, koja se lako pretvori u vjerojatnost. To se tipično radi na sljedeći način.
+
+\[
+P(a) = \frac{\exp(f_{lin}(a))}{ \sum_b \exp(f_{lin}(b))} = \frac{\exp(f_{lin}(a))}{Z}
+\]
+
+Pri tome je uobičajena $Z$ oznaka za "particijsku" funkciju, kojoj je svrha normalizirati vrijednost iz brojnika u vjerojatnosnu distribuciju, tako da je zbroj vjerojatnosti svih mogućih primjera jednaka 1. U skladu s tim je particijska funkcija upravo zbroj vrijednosti brojnika, po svim mogućim primjerima.
+
+ Logaritmiranje brojnika log-linearne funkcije rezultira linearnom funkcijom (što objašnjava ime "log-linearni modeli"), koja je pogodna za analizu i optimizaciju. Više informacija na temu log-linearnih modela može se naći u literaturi iz područja strojnog učenja CITAT.
 
 Bilinearna funkcija je funkcija dvije varijable koja je s obzirom na njih obje linearna CITAT. U skladu s tim, log-bilinearni probabilistički model definira vjerojatnost proporcionalnu eksponenciranoj bilinearnoj funkciji.
 
@@ -347,163 +374,179 @@ P(a, b) \propto \exp(f_{lin}(a, b))
 
 \section{Log-bilinearni jezični model}
 
-Log-bilinearna funkcija može se primjeniti za definiciju uvjetne vjerojatnosti riječi u jezičnom modelu s obzirom na kontekst. Razmatranja o načinu predstavljanja riječi iz poglavlja \ref{sec:lnnet_input} o neuronskom jezičnom modelu vrijede i za log-bilinearni model. Stoga se i u ovom modelu koriste distribuirane reprezentacije. Za kontekst definiran preko \textit{n}-grama, kakav je i dosad korišten u ovom radu, uvjetna vjerojatnost riječi ima sljedeći oblik.
+Log-bilinearna funkcija može se primjeniti za definiciju uvjetne vjerojatnosti riječi s obzirom na prethodne. Razmatranja o načinu predstavljanja riječi iz poglavlja \ref{sec:lnnet_input} o jezičnom modelu temeljenom na neuronskoj mreži vrijede i za log-bilinearni model. Stoga se i u ovom modelu koriste distribuirane reprezentacije. Za kontekst baziran na \textit{n}-gramima, kakav je i dosad korišten u ovom radu, uvjetna vjerojatnost proporcionalna je log-bilinearnoj funkciji.
 
 \begin{equation}
 P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) 
-  \propto \exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W d(w_i)^T + b_{w_i})
+  \propto \exp\left(\left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W R_{w_i}^T + b_{w_i}\right)
 \end{equation}
 
-Funkcija $d(...)$ definirana je izrazom \ref{eq:d_func}. $W$ označava matricu preslikavanja $(n - 1)$ $d$-dimenzionalne reprezentacije na ulazu u jedan $d$-dimenzionalni vektor. Nakon što je time ulazni vektor reprezentacija reduciran na $d$ dimenzija, računa se skalarni produkt s reprezentacijom uvjetovan riječi, te se dodaje pristranost za tu riječ. Dobiveni rezultat potrebno je normalizirati u distribuciju vjerojatnosti nad svim riječima vokabulara.
+$W$ označava matricu preslikavanja $(n - 1)$ $d$-dimenzionalne reprezentacije na ulazu u jedan $d$-dimenzionalni vektor. Nakon što je time ulazni vektor reprezentacija reduciran sa $(n - 1)$ $d$ na $d$ dimenzija, računa se skalarni produkt s reprezentacijom uvjetovane riječi, te se dodaje njena pristranost. Navedene operacije su linearne, a rezultiraju skalarom. Nazivaju se bilinearnom funkcijom jer se prethodni kontekst i uvjetovana riječ razmatraju kao zasebne varijable. Rezultirajući skalar se eksponencira, a rezultat je proporcionalan vjerojatnosti, što definira log-bilinearni model. Kako bi proporcionalnost postala jednakost, potrebno je normalizirati ju particijskom funkcijom.
 
 \begin{equation}
 P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) 
-  = \frac{\exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W d(w_i)^T + b_{w_i})}
-  {\sum_{w \in V} \exp(d(w_{i - (n - 1)}, ... , w_{i - 1}) W d(w)^T + b_{w})}
+  = \frac{\exp\left(\left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W R_{w_i}^T + b_{w_i}\right)}
+  {\sum_{w \in V} \exp\left(\left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W R_{w}^T + b_{w}\right)}
 \end{equation}
 
-Iako je ova definicija vrlo slična matematičkoj definiciji neuronskog modela jezika \ref{eq:lnnet}, zapravo se ne radi o mreži. Umjesto da se na temelju ulaznih riječi (konteksta) računa funkcija izlaza za $|V|$ izlaznih neurona, računa se mjera podudarnosti sa svakom riječi vokabulara.
+Iako je ova definicija vrlo slična matematičkoj definiciji jezičnog modela temeljenog na neuronskoj mreži \ref{eq:lnnet}, bitno je primjetiti da se ovdje ne radi o mreži. Umjesto da se na temelju ulaznih riječi (konteksta) računa funkcija izlaza za $|V|$ izlaznih neurona, računa se mjera podudarnosti sa svakom riječi vokabulara. Ne postoje neuroni koji bi imali svoj ulaz, aktivacijsku funkciju i izlaz. Ovdje se radi o kompoziciji $(n - 1)$ riječi u $d$-dimenzionalni vektor te potom računanju podudarnosti te kompozicije s vektorom koji predstavlja uvjetovanu riječ.
 
 Log-bilinearni model je prikazan na slici \ref{fig:lbl}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics{fig/lbl.pdf}
+\includegraphics[scale=0.5]{fig/lbl.pdf}
 \caption{Arhitektura log-bilinearnog jezičnog modela. Pravokutnici s debljim rubovima su parametri modela. Pravokutnici sa zaobljenim rubovima su podatci koji prolaze kroz model.}
 \label{fig:lbl}
 \end{figure}
 
 \section{Učenje}
 
-Log-linearni modeli poput \textit{softmax}-a se u pravilu treniraju iterativno, gradijentnim smanjenjem funkcije greške. Isti princip učenja primjenjiv je i na log-bilinearni model. Materijali na tu temu su široko dostupni, stoga ona neće biti razložena u ovom radu.
+Log-linearni modeli se, kao i unaprijedne neuronske mreže, u pravilu treniraju iterativno, gradijentnim smanjenjem funkcije greške. Isti princip učenja primjenjiv je i na log-bilinearni model. Sve navedeno u poglavlju \ref{sec:nnet_training} vrijedi i za treniranje log-bilinearnog modela, a dostupni su i brojni materijali na temu gradijetnog spusta i algoritma propagacije greške unatrag.
 
-Specifičnost jezičnog log-bilinearnog modela je istovremeno učenje parametara linearne funkcije $W$ i $b$, te matrice reprezentacija vokabulara $R$. Gradijentno smanjenje greške s obzirom na matricu $R$ općenito je već spomenuta u poglavlju \ref{sec:nnet_grad}. U log-bilinearnom modelu dodatno je zanimljivo što se matrica $R$ koristi na dva mjesta u funkciji. Prvo za dobivanje reprezentacija konteksta, a potom za podudarnost reduciranog konteksta sa svim riječima vokabulara. S obzirom na dobro poznati problem "nestajućeg gradijenta" u treniranju neuronskih mreža, odnosno općenito slojevito definiranih modela, može se očekivati da gradijenti matrice $R$ budu osjetno veći s obzirom na konačni izračun podudarnosti. U tom slučaju učenje prilagođava matricu $R$ rezultatu kompozicije, što u teoriji može smanjiti kvalitetu učenja matrice kompozicije $W$ i reprezentacija $R$ koje doprinose boljim kompozicijama. Stoga je smisleno zapitati se bi li korištenje dviju matrica reprezentacija bilo prikladnije, iako i dalje vrijede protuargumenti navedeni u poglavlju \ref{sec:nnet_grad}. Zbog vremenskih ograničenja pokušaj učenja modela korištenjem dviju reprezentacijskih matrica nije iskušan. U radu CITAT korištena je samo jedna, a pošto su dobiveni rezultati  vrlo konkurentni drugim modelima, može se zaključiti učenje modela sa samo jednom matricom $R$ funkcionira dobro.
+Specifičnost jezičnog log-bilinearnog modela je istovremeno učenje parametara linearne funkcije $W$ i $b$, te matrice reprezentacija vokabulara $R$, kao i u jezičnom modelu temeljenom na neuronskoj mreži. U log-bilinearnom modelu dodatno je zanimljivo što se matrica $R$ koristi na dva mjesta u funkciji. Prvo za dobivanje reprezentacija konteksta, a potom za podudarnost reduciranog konteksta sa svim riječima vokabulara. Smisleno je zapitati se bi li korištenje dviju matrica reprezentacija (jednu za prethodni kontekst, a drugu za uvjetovanu riječ) bilo prikladnije. Pogotovo jer postoje modeli koji idu tako daleko da za svaku riječ definiraju zasebnu matricu kompozicije s drugim riječima CITAT-Socher-2012. Istovremeno, korištenje dviju matrica reprezentacija osjetno povećava parametarski prostor, što može otežati treniranje i rezultirati lošijim modelom. Zbog vremenskih ograničenja pokušaj učenja modela korištenjem dviju reprezentacijskih matrica nije isproban. U radu koji definira log-bilinearni model CITAT je korištena samo jedna, a pošto su dobiveni rezultati vrlo konkurentni drugim modelima, može se zaključiti da korištenje jedinstvene matrice $R$ funkcionira dobro.
 
 \section{Složenost modela}
 
-Log-bilinearni model, kao i neuronska mreža, gradijentnim spustom smanjuje grešku procjene mjenjajući parametre modela (matricu preslikavanja, pristranosti). U tom smislu je zanimljivo usporediti broj parametara log-bilinearnog modela i neuronske mreže.
+Log-bilinearni model, kao i neuronska mreža, trenira se gradijentnim smanjenjem greške. Već je objašnjeno kako broj parametara modela snažno utječe na vremensku i memorijsku složenost treniranja i korištenja mreže, iste opservacije vrijede i za log-bilinearni model. U tom smislu je zanimljivo usporediti broj parametara log-bilinearnog modela i neuronske mreže.
 
-Matrica distribuiranih reprezentacija $R$ sadrži $|V| d$ parametara, matrica preslikavanja $W$ sadrži $(n - 1) d d$ parametara, a vektor pristranosti $d$ parametara. Sveukupno, log-bilinearni model sadrži $\left((n - 1) d + |V| + 1\right) d$ parametara. Memorijska složenost ovisi o dominantnom faktoru i stoga glasi $O(d |V|)$, što je $n$ puta manje od memorijske složenosti neuronske mreže. Isto tako, ta složenost ne ovisi o parametru $n$ (za smislene vrijednosti $n$), što znači da se veličina konteksta log-bilinearnog modela može povećavati bez da se znatno poveća memorijski zahtjevi modela.
+Matrica distribuiranih reprezentacija $R$ sadrži $|V| d$ parametara, matrica preslikavanja $W$ sadrži $(n - 1) d^2$ parametara, a vektor pristranosti $d$ parametara. Sveukupno, log-bilinearni model sadrži $\left((n - 1) d + |V| + 1\right) d$ parametara. Složenost ovisi o dominantnom faktoru. Pošto je u pravilu $|V|$ puno veći broj od $(n - 1) d$, konačna složenost je $O(d |V|)$, što je $n$ puta manje od memorijske složenosti neuronske mreže. Isto tako, ta složenost ne ovisi o parametru $n$, što znači da se veličina konteksta log-bilinearnog modela može povećavati bez da se znatno poveća memorijska složenost modela.
 
-Vremensku složenost treniranja i korištenja modela isto tako je teško procjeniti, kao i kod neuronske mreže. Trajanje treniranja modela svakako ovisi o broju parametara, pa je aproksimacija vremenske složenosti kao $O(d |V|)$ opravdana. Još jedna zanimljivost ovog modela je da je složenost korištenja modela vjerojatno niža od memorijske složenosti. Iz matematičke definicije modela vidljivo je da se reprezentacije dobivaju iz matrice $R$ naprosto indeksiranjem prikladnog retka te matrice, čak nije taj redak potrebno kopirati, što je vrlo jeftina operacija. Računske operacije pri korištenju modela se dešavaju u prostoru parametara koji ovisi samo o veličini reprezentacije $d$ i veličini konteksta $n$. Ne ovise o veličini vokabulara. Stoga korištenje modela (naspram treniranja) vrlo vjerojatno ima vremensku složenost $O(d n)$, što je puno manje od vremenske složenosti korištenja neuronske mreže, aproksimirane s $O(n d |V|)$.
+Vremensku složenost treniranja i korištenja modela isto tako je teško procjeniti, kao i kod neuronske mreže. Trajanje treniranja modela svakako ovisi o broju parametara, pa je aproksimacija vremenske složenosti kao $O(d |V|)$ opravdana, i opet $n$ puta manja od vremenske složenosti treniranja neuronske mreže.
 
-\section{Implementacija}
-
-Za implementacije neuronskih mreža dostupni su mnogi alati. Većina njih je visoko optimizirana kako bi što učinkovitije koristili dostupne računalne resurse. Višeprocesorska i višejezgrena računala koriste se za paralelizaciju treniranja mreže, a sve dostupnija je i podrška za treniranje mreža koristeći visoki stupanj paralelizma grafičkih procesora. Nadalje, alati često podržavaju definiciju mreže na visokom stupnju apstrakcije i automatizirani izračun gradijenata, što olakšava implementaciju i smanjuje količinu grešaka u programskom kodu.
-
-U ovom radu za korištena je \textit{open-source} knjižnica Theano\footnote{http://deeplearning.net/software/theano/}, čije sučelje je dostupno za jezik Python\footnote{https://www.python.org/}. Odabrana je zbog fleksibilnosti definiranja modela (lako se koristi s visoke razine apstrakcije, ali omogućava i rad na nižim razinama), automatiziranog izračuna gradijenata i mogućnosti izvršvanja istog koda na centralnim i grafičkim procesorima.
+Još jedna zanimljivost ovog modela je da je vremenska složenost korištenja modela vjerojatno još povoljnija. Pri treniranju se matrica $R$ optimira kao i ostali parametri, ali pri korištenju služi samo za pohranu distribuiranih reprezentacija. One se dobivaju iz matrice $R$ indeksiranjem prikladnog retka, što je vrlo jeftina operacija. Računske operacije pri korištenju modela se sve dešavaju u prostoru parametara koji ovisi samo o veličini reprezentacije $d$ i veličini konteksta $n$. Ne ovisi o veličini vokabulara. Stoga korištenje modela ima vremensku složenost $O(n d)$, osjetno manje od vremenske složenosti korištenja neuronske mreže, aproksimirane s $O(n d |V|)$.
 
 \section{Implementacija}
 
-Log-bilinearni model malo je manje uobičajen od unaprijednih neuronskih mreža. Nisu poznati alati koji bi omogućili definiranje takvog modela na visokoj razini apstrakcije dostupnoj za neuronske mreže, ali su alati za numeričku optimizaciju malo niže razine apstrakcije svejednako od velike koristi. Konkretno, postoji više komercijalnih i besplatnih alata koji omogućavaju simboličku definiciju log-bilinearnog modela, te automatizirani izračun gradijenata i optimizirani proces treniranja.
+Log-bilinearni model malo je manje uobičajen od unaprijednih neuronskih mreža. Nisu poznati alati koji bi omogućili definiranje takvog modela na visokoj razini apstrakcije dostupnoj za neuronske mreže, ali su alati za numeričku optimizaciju malo niže razine apstrakcije svejednako od velike koristi. Konkretno, postoji više komercijalnih i besplatnih alata koji omogućavaju jednostavnu simboličku definiciju log-bilinearnog modela, te automatizirani izračun gradijenata i optimizirani proces treniranja.
 
 Kao i za model jezika temeljen na neuronskog mreži, za implementaciju log-bilinearnog modela korištena je knjižnica Theano. Knjižnica je korištena za automatsko izračunavanje gradijenta te optimalno treniranje modela na centralnim i grafičkim procesorima.
+
+Kao i kod implementacije neuronske mreže, većina koda ima svrhu procesiranja teksta, ekstrakcije vokabulara i pretvaranje teksta u \textit{n}-grame rednih brojeva riječi vokabulara. Definicija modela je u Theano knjižnici relativno jednostavna, kao i treniranje. Koristi se RMSprop inačica gradijentnog spusta, koja naspram "običnog" jako ubrzava proces učenja.
 
 \chapter{Ograničeni Boltzmannov stroj}
 
 U radu CITAT razmatra se i jezični model temeljen na ograničenom Boltzmannovom stroju (u nastavku "RBM", od engl. \textit{Restricted Boltzmann Machine}). RBM je generativni probabilistički model CITAT zanimljive formulacije, te ga stoga vrijedi spomenuti, iako je u spomenutom radu manje uspješan od log-bilinearnog modela.
 
-RBM je dvoslojni probabilistički model. Prvi, vidljivi, sloj sadrži binarne ili mulitinomijalne varijable, dok drugi sloj predstavlja latentne varijable isključivo binarnog tipa. Vjerojatnost stanja cjelokupne mreže definirana je kao eksponencirana negativna energija modela, kao u Boltzmannovoj distribuciji, otkud dolazi ime.
+RBM je dvoslojna neuronska mreža. Prvi (vidljivi) sloj sadrži neurone koji mogu biti proizvoljnog tipa, dok drugi sloj sadrži skrivene neurone koji mogu biti isključivo u stanjima 0 ili 1 (binarna aktivacija). Svaki vidljivi neuron je spojen sa svakim skrivenim, ali ne postoje veze među neuronima istog sloja. Stoga se RBM može predočiti kao potpuno spojeni bipartitni graf, što je prikazano na slici \ref{fig:rbm}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.7\textwidth]{fig/rbm_ex1.pdf}
+\caption{Vizualni prikaz ograničenog Boltzmannovog stroja. Svaki neuron vidljivog sloja je spojen sa svim skrivenim neuronima. Neuroni istog sloja nisu izravno povezani.}
+\label{fig:rbm}
+\end{figure}
+
+Moguće je izračunati vjerojatnost svakog stanja RBMa, pri čemu "stanje" znači da svi vidljivi i skriveni neuroni imaju neke konkretne vrijednosti. Vjerojatnost stanja definirana je kao eksponencirana negativna energija, kao u Boltzmannovoj distribuciji, po kojoj je model nazvan.
 
 \begin{equation}
 \label{eq:rbm_p}
 P(s) = \frac{\exp(-E(s))}{\sum_{s'}\exp(-E(s'))}
 \end{equation}
 
-Pri tome je vektor $s$ proizvoljno stanje svih neurona mreže, odnosno unija vidljivih neurona $v$ i skrivenih neurona $h$. Energija mreže je linearna funkcija stanja neurona. RBM je po definiciji potpuno spojeni bipartitni graf neurona vidljivog i skrivenog sloja. Energija je definirana na sljedeći način.
+Pri tome je vektor $s$ spomenuto stanje svih neurona mreže, odnosno unija vidljivih neurona $v$ i skrivenih neurona $h$. Energija mreže je linearna funkcija stanja neurona. U tom smislu RBM podsjeća na log-linearni model, odnosno neuronsku mrežu sa \textit{softmax} slojem. Jedna od razlika je to što su u RBMu skriveni neuroni binarni. Energija RBMa je definirana na sljedeći način.
 
 \[
 E(s) = E(v, h) = - v W h^T  - v b_v - h b_h
 \]
 
-Pri tome je $W$ matrica težinskih veza među neuronima vidljivog i skrivenog sloja, $b_v$ pristranosti vidljivog sloja, a $b_h$ pristranosti skrivenog sloja.
+Pri tome je $W$ matrica težinskih veza među neuronima vidljivog i skrivenog sloja, $b_v$ su pristranosti vidljivog sloja, a $b_h$ skrivenog.
 
-Sličnost s već definiranim log-bilinearnim i \textit{softmax} modelom je očita. Što RBM čini specifičnim je to da su neuroni mreže probabilistički, a ne deterministički. Vjerojatnost binarne aktivacije vidljivog neurona $v$ (preuzimanja stanja $0$ ili $1$) u skladu s \ref{eq:rbm_p} je definirana kao funkcija energije.
-
-\[
- P(v_i = 1) = \frac{1}{ 1 + e^{- ( W_i h^T + b_s)}} = \sigma( W_i h + b_{vi})
-\]
-
-Pri tome $W_i$ označava redak matrice koji odgovara vidlivom neuronu $v_i$. Može se primjetiti kako vjerojatnost aktivacije vidljivog neurona ovisi samo o stanjima skrivih, a ne o ostalim vidljivim neuronima. Kao što je spomenuto, neuroni su u RBMu organizirani u bipartitan graf, dakle veze među neuronima istog sloja ne postoje. Vjerojatnost aktivacije skrivenog neurona ima identičan izraz, s obzirom na vidljive neurone. Probabilistička aktivacija neurona specifično je svojstvo RBMova i modela temeljenih na RBMova koja ima snažno regularizacijsko djelovanje. Stoga su RBMovi često korišteni za pohlepono pred-treniranje slojeva dubokih neuronskih mreža CITAT, iako se rijetko koriste u konačnim mrežama jer deterministički neuroni uglavnom daju bolje rezultate CITAT. Detaljnije teoretsko i praktično razmatranje RBMa dostupno je u CITAT-Stamenković.
-
-\section{RBM jezični model}
-
-RBM je generativni probabilistički model, što znači da modelira vjerojatnosnu distribuciju pojavljivanja primjera i pripadnosti tog primjera nekoj klasi, u diskriminacijskoj primjeni. Za izradu jezičnog modela RBM ovakav model se može primjeniti za modeliranje distribucije \textit{n}-grama, odnosno uvjetnu vjerojatnost posljednje riječi \textit{n}-grama za dani konktekst od prethodnih ($n$ - 1) riječi. Da bi se došlo do izraza za vjerojatnost, potrebno je prvo definirati energiju.
+Sličnost s već definiranim log-bilinearnim i \textit{softmax} modelom je očita. Što RBM čini specifičnim je to da su neuroni mreže probabilistički, a ne deterministički. Vjerojatnost binarne aktivacije skrivenog neurona $v_i$ (preuzimanja stanja $0$ ili $1$) je definirana kao funkcija energije, u skladu s \ref{eq:rbm_p}.
 
 \[
-E(w_{i - (n - 1)}, ... , w_i, h) =  - d(w_{i - (n - 1)}, ... , w_i) (W h + b_v) - h b_h
+ P(h_i = 1) = \frac{1}{ 1 + \exp \left( - v W_{h_i} - b_{h_i} \right) } = \sigma( v W_{h_i} + b_{h_i} )
 \]
 
-Na temelju energije može se definirati uvjetna vjerojatnost posljednje riječi \textit{n}-grama i stanja skrivenog sloja.
+Pri tome $W_{h_i}$ označava stupac matrice koji sadrži težine veza vidljivog sloja i skrivenog neurona $h_i$, a $b_{h_i}$ pristranost istog neurona. $\sigma(...)$ je uobičajena oznaka za sigmoidalnu odnosno logističku funkciju. Može se primjetiti kako vjerojatnost aktivacije skrivenog neurona ovisi samo o stanjima vidljivih, a ne o ostalim skrivenim neuronima. Kao što je spomenuto, neuroni su u RBMu organizirani u bipartitan graf, dakle veze među neuronima istog sloja ne postoje.
+
+U slučaju da su vidljivi neuroni isto binarni (što se preferira), izraz za vjerojatnost njihove aktivacije je identičan, s obzirom na stanja skrivenih neurona. U slučaju da su vidljivi neuroni drugog tipa, aktivacija isto ima probabilistički izraz, ali drukčijeg oblika.
+
+Probabilistička aktivacija neurona specifično je svojstvo RBMova i modela temeljenih na RBMova koja ima snažno regularizacijsko djelovanje. Stoga su RBMovi često korišteni za pred-treniranje slojeva dubokih neuronskih mreža CITAT. Detaljnije teoretsko i praktično razmatranje RBMa dostupno je u CITAT-Stamenković.
+
+\section{Jezični model temeljen na RBMu}
+
+RBM je generativni probabilistički model, što znači da modelira vjerojatnosnu distribuciju pojavljivanja primjera. Za izradu jezičnog modela RBM ovakav model se može primjeniti za modeliranje distribucije pojavljivanja \textit{n}-grama. Takav model može dati procjenu relativnih vjerojatnosti proizvoljnih \textit{n}-grama. Ako se pri tome prvih $(n - 1)$ riječi fiksira, a posljednja varira po vokabularu, može se dobiti uvjetna vjerojatnost posljednje riječi s obzirom na prethodne.
+
+Prvi korak u definiranju vjerojatnosne distribucije je definiranje energije modela, za ulazni primjer.
+
+\[
+E(w_{i - (n - 1)}, ... , w_i, h) =  - \left[R_{w_{i - (n - 1)}}, ... , R_{w_i} \right] (W h + b_v) - h b_h
+\]
+
+Može se primjetiti kako je energija deifnirana na temelju distribuiranih reprezentacija svih riječi \textit{n}-grama, uz poznato stanje skrivenog sloja $h$. Do uvjetne vjerojatnosti posljednje riječi, bez poznatog stanja skriveno sloja, doći će se u nastavku. Na temelju energije može se definirati uvjetna vjerojatnost posljednje riječi \textit{n}-grama i stanja skrivenog sloja.
 
 \[
 P(w_i, h | w_{i - (n - 1)}, ... , w_{i - 1})
  = \frac{\exp(-E(w_{i - (n - 1)}, ... , w_i, h))}
-  {\sum_{h'} \sum_w \exp(-E(w_{i - (n - 1)}, ... , w_{i - 1}, w, h'))}
+  {\sum_{h'} \sum_{w \in V} \exp(-E(w_{i - (n - 1)}, ... , w_{i - 1}, w, h'))}
 \]
 
-Konačno, marginalizacijom po svim mogućim stanjima skrivenog sloja može se izraziti uvjetna vjerojatnost posljednje riječi \textit{n}-grama.
+Vidljivo je kako se normalizacija vjerojatnosti vrši po svim mogućim stanjima skrivenoh sloja, i svim riječima vokabulara. Marginalizacijom izražene po svim mogućim stanjima skrivenog sloja može se izraziti uvjetna vjerojatnost posljednje riječi \textit{n}-grama.
 
 \[
 P(w_i | w_{i - (n - 1)}, ... , w_{i - 1})
  = \frac{\sum_h \exp(-E(w_{i - (n - 1)}, ... , w_i, h))}
-  {\sum_{h'} \sum_w \exp(-E(w_{i - (n - 1)}, ... , w_{i - 1}, w, h'))}
+  {\sum_{h'} \sum_{w \in V} \exp(-E(w_{i - (n - 1)}, ... , w_{i - 1}, w, h'))}
 \]
+
+Dobivena vjerojatnost iterira po svim mogućim stanjima skrivenog sloja. S obzirom da svaki neuron skrivenog sloja može biti u $2$ stanja, broj mogućih stanja skrivenog sloja je $2^{|h|}$, dakle eksponencijalan je s obzirom na broj neurona skrivenog sloja. Ova izrazito nepogodna složenost može se zgodnim trikom pretvoriti u linearnu složenost s obzirom na broj neurona skrivenog sloja, kao što je opisano u CITAT.
 
 \section{Učenje}
 
-Gradijentnu minimizacija funkcije greške  teško je izravno primjeniti zbog binarnih stohastičkih neurona. Kako bi se izračunali točni gradijenti greške, potrebno bi bilo evaluirati sve moguće konfiguracije binarnih neurona. Stoga se u praksi koristi algoritam "kontrastna divergencija", koji gradijentni spust aproksimira CITAT. Definicija algoritma i praktične implikacije izlaze izvan okvira ovog rada, detalji se mogu pronaći u mnogim dostupnim materijalima na temu, primjerice CITAT.
+Algoritam propagacije greške unatrag teško je izravno primjeniti na RBM zbog binarnih stohastičkih neurona. Stoga se u praksi koristi algoritam "kontrastna divergencija", koji gradijentni spust aproksimira uzorkovanjem CITAT. Definicija algoritma i praktične implikacije njegovog korištenja izlaze izvan okvira ovog rada, detalji se mogu pronaći u mnogim dostupnim materijalima na temu, primjerice CITAT-Stamenković.
 
 \section{Implementacija}
 
-Grafički modeli sa stohastičkim varijablama kompleksniji su za treniranje od determinističkih modela. Razloga je više. Prvo, egzaktni izračun vjerojatnosti tipično podrazumijeva marginalizaciju po sivm mogućim stanjima skrivenog sloja. Iako se domišljatim trikom CITAT ovo može obavit u linearnom vremenu (s obzirom na broj neurona skrivenog sloja), izračun može biti numerički osjetljiv. Nadalje, treniranje i korištenje modela dobiva dodatno na računskoj složenosti korištenjem stohastičkih neurona, koji se oslanjaju na generatore nasumičnih brojeva. Što se tiče treniranja, parametre je potrebno podešavati "ručno" na temelju pseudo-gradijenata izračunatih kontrastnom divergencijom. Ovo otežava korištenje efikasnih numeričkih alata i implementaciju.
+Grafički modeli sa stohastičkim varijablama kompleksniji su za treniranje od determinističkih modela. Razloga je više. Prvo, egzaktni izračun vjerojatnosti tipično podrazumijeva marginalizaciju po sivm mogućim stanjima skrivenog sloja. Iako se ovo može izbjeći, kao što je već spomenuto, izračun može biti numerički nestabilan. Treniranje RBMa se oslanja na generatore nasumičnih brojeva, što usporava učenje. Stohastički binarni neuroni dobro regulariziraju model, ali se treniraju sporije. Pošto se ne koristi optimizacija parametara gradijentnim spustom, parametre je potrebno podešavati "ručno" na temelju pseudo-gradijenata izračunatih kontrastnom divergencijom. Ovo otežava korištenje efikasnih numeričkih alata i čini implementaciju kompleksnijom.
 
-Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem Theano knjižnice. Model je treniran algoritmom kontrastne divergencije. S obzirom na vremenska ograničenja, rezultirajuća implementacija je suboptimalna i komplicirana u odnosu na ostale modele u ovom radu. Provedeno je treniranje i vrednovanje ograničene uspješnosti. Iako je RBM pokazao najlošije rezultate u radu CITAT na kojem je ovaj baziran, moguće je da je implementacija RBMa ponuđena u ovom radu neispravna, uz to što je po definiciji osjetno sporija od drugih isprobanih metoda. S obzirom na kompleksnost ovog modela i poznato slabije rezultate, čini se da je praktično najmanje zanimljiv i isplativ od isprobanih rješenja.
+Unutar ovog rada jezični model baziran na RBMu implementran je korištenjem Theano knjižnice. Model je treniran algoritmom kontrastne divergencije. Implementacija je suboptimalna zbog kompleksnosti algoritma, uz to što je po definiciji osjetno sporija od drugih isprobanih metoda. Provedeno je treniranje i vrednovanje ograničene uspješnosti, nije moguće jamčiti ispravnost ponuđene implementacije. S obzirom na kompleksnost ovog modela i poznato slabije rezultate, čini se da je praktično od najmanje koristi među modelima razmotrenim u ovom radu.
 
 \chapter{Vrednovanje}
 \label{sec:eval}
 
 \section{Metodologija}
 
-Svrha jezičnog modela je ocjena sukladnosti neviđenog teksta i korpusa nad kojim je treniran. Za ocjenjivanje uspješnosti modela vrijede isti koncepti koji se primjenjuju u strojnom učenju općenjito. Ukratko, model je potrebno vrednovati korištenjem podataka koji su došli iz iste distribucije kao i podatci s kojima je model treniran, ali istovremeno oni moraju biti nezavisni. U skladu s tim, tipičan pristup vrenovanju je da se cjelokupni skup podataka dostupan za implementaciju modela podijeli da skup za treniranje, i skup za testiranje. Veličina ispitnog skupa ovisi o modelu, primjeni i količini dostupnih podataka. Pošto se jezični modeli tipično treniraju nad vrlo velikim korpusima, podataka u pravilu ima dovoljno. Stoga se za ispitni skup odvaja okvirno 5-10 posto svih podataka, dovoljno da bi ispitni skup imao sličnu distribuciju kao cijeli korpus, ali bez da se model zakine za previše podataka za učenje.
+Svrha jezičnog modela je ocjena smislenosti neviđenog teksta, s obzirom na korupus teksta nad kojim je model treniran. Za ocjenjivanje uspješnosti modela vrijede isti koncepti koji se primjenjuju u strojnom učenju općenito. Ukratko, model je potrebno vrednovati korištenjem podataka koji su došli iz iste distribucije kao i podatci s kojima je model treniran, ali koji nisu sadržani u skupu za treniranje. U skladu s tim, tipičan pristup vrednovanju je da se cjelokupni skup podataka dostupan za implementaciju modela podijeli na skup za treniranje i skup za testiranje. Veličina ispitnog skupa ovisi o modelu, primjeni i količini dostupnih podataka. Pošto se jezični modeli tipično treniraju nad vrlo velikim korpusima, podataka u pravilu ima dovoljno. Stoga se za ispitni skup odvaja okvirno 5-10 posto svih podataka, dovoljno da bi ispitni skup imao sličnu distribuciju kao cijeli korpus, ali bez da se model zakine za previše podataka za učenje.
 
 \section{Mjera uspješnosti jezičnog modela}
 
-Za vrednovanje uspješnosti prediktivnih modela koriste se standardizirane mjere. Uobičajeno je za klasifikaciju koristiti mjeru točnosti predikcije nad ispitnim skupom. Točnost je udio primjera ispitnog skupa kojima je model dodjielio prikladnu oznaku klase. Za situacije kada svaka klasa nije podjednako zastupljena u skupu za treniranje, prikladnija je F mjera uspješnosti CITAT, koja stavlja jednaki naglasak na svaku klasu, bez obzira na njenu zastupljenost.
+Za vrednovanje uspješnosti prediktivnih modela koriste se standardizirane mjere. Uobičajeno je za klasifikaciju koristiti mjeru točnosti predikcije nad ispitnim skupom. Točnost je udio primjera ispitnog skupa kojima je model dodjielio prikladnu oznaku klase. U situacijama kada klase nisu podjednako zastupljene u skupu za treniranje, prikladnija je F-mjera uspješnosti CITAT.
 
-Navedene mjere nisu prikladne za ocjenu jezičnih modela zbog ambivalentnosti koja je jeziku inherentna. Za ilustraciju, konteksta \textit{"Znaš da volim..."} smisleno mogu nastaviti riječi \textit{"cirkus"}, \textit{"mrkvu"}, \textit{"skakati"} i brojne druge. Bilo bi stoga neispravno jezični model ocjeniti neuspješnim ako je kao nastavak predvidio riječ \textit{"automobile"}, a u ispitnom skupu je dati kontekst nastavljen s riječi \textit{"motocikle"}. Istovremeno, može se očekivati od modela da ipak neku zamjetnu vjerojatnnost za dani kontekst dodijeli i riječi \textit{"motocikle"}. Stoga se ocjenjuje upravo ta vjerojatnost.
+Navedene mjere nisu prikladne za ocjenu jezičnih modela zbog ambivalentnosti koja je jeziku inherentna. Za ilustraciju, kontekst \textit{"Znaš da volim..."} smisleno mogu nastaviti riječi \textit{"cirkus"}, \textit{"mrkvu"}, \textit{"skakati"} i brojne druge. Bilo bi stoga neispravno jezični model ocjeniti neuspješnim ako je kao nastavak predvidio riječ \textit{"automobile"}, a u ispitnom skupu je dotični kontekst nastavljen s riječi \textit{"motocikle"}. Istovremeno, može se zahtjevati od modela da neku zamjetnu vjerojatnost dodijeli i riječi \textit{"motocikle"}. Stoga se ocjenjuje upravo ta vjerojatnost.
 
-Najčešće korištena mjera uspješnosti jezičnog modela je \textit{"perplexity"} (u prijevodu \textit{"zbrka"}, \textit{"zbunjenost"}). Matematička definicija mjere za distribuciju diskretne varjable slijedi.
-
-\[
-\mathcal{P} = b^{- \sum_x p(x) log_b q(x)}
-\]
-
-Pri tome je $p(x)$ istinska vjerojatnost pojavljivanja \textit{n}-grama $x$, $q(x)$ predikcija vjerojatnosti za $x$ od strane modela, $b$ baza logaritma (tipično se koriste $2$ ili baza prirodnog logaritma $e$), a $H(p)$ je entropija vjerojatnosne distribucije, mjera često korištena u teoriji informacije. Unutar ovog rada korištena je baza prirodnog logaritma $e$.
+Najčešće korištena mjera uspješnosti jezičnog modela je \textit{"perplexity"} (u prijevodu \textit{"zbrka"}, \textit{"zbunjenost"}). Označava se simbolom $\mathcal{P}$, njena definicija slijedi.
 
 \[
-\mathcal{P} = \exp\left(- \sum_x p(x) \ln q(x) \right)
+\mathcal{P} = b^{- \sum_x P(w | ...) log_b Q(w | ...)}
 \]
 
-Kada se ova mjera koisti na skupu za testiranje u pravilu se pretpostavlja da je vjerojatnost primjera $p(x)$ jednaka udjelu tog primjera u skupu za testiranje, odnosno da je $p(x) = 1 - N_t$, gdje je $N_t$ broj primjera u testnom skupu.
+Pri tome je $P(w | ...)$ vjerojatnost da kontekst $...$ nastavi riječ $w$, $Q(w | ...)$ je predikcija te vjerojatnosti od strane modela, a $b$ baza logaritma (tipično se koriste $2$ ili baza prirodnog logaritma $e$). U ovom radu korištena je baza prirodnog logaritma $e$.
 
 \[
-\mathcal{P} = \exp\left(- \sum_x \frac{1}{N_t} \ln q(x) \right)
+\mathcal{P} = \exp\left(- \sum_x P(w | ...) \ln Q(w | ...) \right)
 \]
 
-Konačni izraz za mjeru vrednovanja, koji koristi uvjetnu vjerojatnost pojavljivanja riječi, tada je definiran na sljedeći način.
+Kada se ova mjera koisti na skupu za testiranje u pravilu se pretpostavlja da je vjerojatnost primjera $P(w | ...)$ jednaka udjelu tog primjera u skupu za testiranje, odnosno da je $P(w | ...) = 1 / N_t$, gdje je $N_t$ broj primjera u testnom skupu.
 
 \[
-\mathcal{P} = \exp\left(- \frac{1}{N_t} \sum_{w_{i - (n - 1)}, ..., w_n}  \ln P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) \right)
+\mathcal{P} = \exp\left(- \sum_x \frac{1}{N_t} \ln Q(w | ...) \right)
 \]
 
-Ovako definirana mjera uspješnosti modela može se interpretirati na sljedeći način. Poželjno je da model primjer $w_{i - (n - 1)}, ..., w_n$ iz ispitnog skupa ocijeni sa što većom vjerojatnošću. Logaritam te vjerojatnosti ju preslikava u interval $(- \infty, 0)$. Uprosječen logaritam vjerojatnosti po svim primjerima ispitnog skupa naglašava niske vjerojatnosti, odnosno loše procjene modela. Eksponenciranjem negativnog prosjeka mjera se vraća iz logaritamskog u vjerojatnosni prostor. Konačna brojka stoga označava obrnutu prosječnu procjenu vjerojatnosti \textit{n}-grama modela, odnosno koliko je model "nesiguran" da riječ $w_n$ smisleno nastavlja kontekst $w_{i - (n - 1)}, ... , w_{i - 1}$. Dakle, dobar model ima malu mjeru \textit{perplexity}.
+Konačni izraz za mjeru vrednovanja, koji koristi uvjetnu vjerojatnost riječi s obzirom na prethodnu $(n - 1)$ riječ, tada je definiran na sljedeći način.
 
-Potrebno je razmotriti i korištenje mjere \textit{perplexity} za usporedbu s modelima iz drugih radova. Generalno govoreći, izravnu usporedbu treba izbjegavati. Razlog tome je što mjera \textit{perplexity} jako ovisi o vokabularu korištenom za izgradnju jezičnog modela, kao i veličini skupa za treniranje i evaluaciju, odnosno podudarnosti distribucija tih dva skupa. Konkretno, korištenjem manjeg vokabulara (koji može biti naprosto posljedica drukčijeg pretprocesiranja teksta) moguće je na manjem, ali konzistentnom, korpusu postići vrlo niske rezultate mjere \textit{perplexity}. Ovo može navesti na krivi zaključak kako je dotični model bolji od nekog drugog modela treniranog na većem korpusu s većim vokabularom. U tom smislu je mjera \textit{perplexity} prikladna isključivo za usporedbu modela treniranih na istom korpusu s istim vokabolarom.
+\begin{equation}
+\label{eq:perplexity}
+\mathcal{P} = \exp\left(- \frac{1}{N_t} \sum_{w_{i - (n - 1)}, ..., w_n}  \ln Q(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) \right)
+\end{equation}
+
+Za dobivanje dojma o mjeri \textit{perplexity} najbolje je razmotriti nekoliko primjera. Može se zamisliti jezični model koji svakoj riječi dodjeljuje istu vjerojatnost (nasumično pogađa riječi), bez obzira na kontekst. Ovakav model očito je vrlo loš, ali pogoduje za ilustraciju. Vjerojatnost koju će taj model ponuditi za svaku riječ tada je $1 / |V|$. Ako se ta vrijednost uvrsti u izraz \ref{eq:perplexity}, mjera \textit{perplexity} će biti $\mathcal{P} = |V|$. Potom se može razmotriti nešto bolji model. Taj model predviđa da je za zadani kontekst ispravni nastavak jedna od $100$ različitih riječi, svaka sa podjednakom vjerojatnošću. Vjerojatnost koju on nudi je $0.01$, a mjera \textit{perplexity} za taj model tada je $\mathcal{P} = 100$. Dakle, za model koji primjer ispitnog skupa uvijek ocjenjuje vjerojatnošću $p$, mjera \textit{perplexity} je $\mathcal{P} = 1 / p$. Naravno, stvarni modeli ne daju tako uniformne i konzistentne procjene, ali navedeni primjeri trebali bi okvirno ilustrirati ponašanje mjere \textit{perplexity}.
+
+Potrebno je razmotriti i korištenje mjere \textit{perplexity} za usporedbu s modelima iz drugih radova. Generalno govoreći, izravnu usporedbu treba izbjegavati. Razlog tome je što mjera \textit{perplexity} jako ovisi o vokabularu korištenom za izgradnju jezičnog modela, kao i veličini skupa za treniranje i evaluaciju, odnosno podudarnosti distribucija tih skupova. Primjerice, korištenjem manjeg vokabulara (koji može biti naprosto posljedica drukčijeg pretprocesiranja teksta) moguće je na istom skupu za treniranje postići niže rezultate mjere \textit{perplexity}. Ovo može navesti na krivi zaključak kako je dotični model bolji od nekog treniranog na istom korpusu, ali korištenjem većeg vokabulara. Istovremeno, korištenje većeg vokabuara možda predikcije čini finijim, preciznijim, i time prikladnijim za neku specifičnu uporabu. U tom smislu je mjera \textit{perplexity} prikladna isključivo za usporedbu modela treniranih na istom korpusu s istim vokabolarom, te jednakom podjelom korpusa na skup za treniranje i ispitivanje.
 
 \section{Korpus}
 
-Za vrednovanje jezičnih modela implementiranih u ovom radu koristiti će se korpus iz \textit{Microsoft Research Sentence Completion Challenge} CITAT (u nastavku MRSCC). Zadak u MRSCC je izgraditi jezični model koji za svaku od 1040 rečenica testnog skupa odabire točnu riječ koja rečenicu kompletira, između pet ponuđenih. Rečenice su sve uzete iz Sir Arthur Conan Doyle-ovog serijala o detektivu Sherlocku Holmesu. U svakoj rečenici je za jednu riječ osmišljeno četiri alternativne, koje su sintaktički ispravne, ali semantički neispravne. Primjer jedne rečenice i ponuđenih alternativa slijedi.
+Za vrednovanje jezičnih modela implementiranih u ovom radu koristit će se \textit{Microsoft Research Sentence Completion Challenge} (u nastavku MRSCC) korpus CITAT. Zadak u MRSCC je izgraditi jezični model koji točno kompletira 1040 rečenica ispitnog skupa. U svakoj rečenici je za jednu riječ osmišljeno četiri alternativne, koje su sintaktički ispravne, ali semantički manje smislene od originalne riječi. Rečenice su sve uzete iz Sir Arthur Conan Doyle-ovog serijala o detektivu Sherlocku Holmesu. Slijedi primjer jedne rečenice i ponuđenih alternativa.
 
 \begin{enumerate} 
 \item{The king \textbf{landed} at him in amazement.}
@@ -513,36 +556,36 @@ Za vrednovanje jezičnih modela implementiranih u ovom radu koristiti će se kor
 \item{The king \textbf{stared} at him in amazement.}
 \end{enumerate}
 
-U navedenom primjeru naviše smisla ima posljednja rečenica (\textit{"stared"}). Treća rečenica (\textit{"smiled"}) je donekle smislena, dok ostale osjetno manje. Upravo zbog toga što su niti jedan primjer nije sasvim besmisle je MRSCC zadatak vrlo zanimljiv. Čovjek koji dobro govori engleski jezik lako zadatak riješi s točnošću preko 90\%. Istovremeno je za računalo zadatak iznimno težak, jer se bazira na semantičkom povezivanju koncepata i tumačenju konteksta rečenice. U trenutku pisanja svi računalni jezični modeli na MRSCC testu postižu točnost ispod 60\% CITAT.
+U navedenom primjeru naviše smisla ima posljednja rečenica (\textit{"stared"}). Treća rečenica (\textit{"smiled"}) je donekle smislena, a ostale osjetno manje. Upravo zbog toga što niti jedna alternativa nije sasvim besmislena je MRSCC zadatak vrlo zanimljiv. Čovjek koji dobro govori engleski jezik lako postiže uspješnost od 90\% na cijelom skupu. Istovremeno je za računalo zadatak iznimno težak, jer se bazira na semantičkom povezivanju koncepata i tumačenju konteksta rečenice. U trenutku pisanja svi računalni jezični modeli na MRSCC testu postižu točnost ispod 60\% CITAT.
 
-Za MRSCC je propisan i točno definiran korpus teksta nad kojim je dozvoljeno graditi model. Time se osigurava da sve implementacije imaju iste početne uvjete. Primjerice, nije dozvoljeno koristiti javno dostupne Google \textit{n}-grame CITAT, jer su oni pobrojani iz puno većeg korpusa teksta, koji možda čak čak obuhvaća rečenice iz skupa za testiranje. Propisani korpus se sastoji od 522 književna djela (pretežno romana) engleskog govornog područja iz istog vremenskog perioda u kojem je pisao Conan Doyle (19.\ stoljeće). Cijeli korpus sadrži oko 50 milijuna riječi, a preuzet je sa stranica Guttenberg projekta\footnote{https://www.gutenberg.org/}, gdje su korištena djela dostupna u cijelosti, bez legalnih restrikcija.
+Za MRSCC je točno definiran korpus teksta nad kojim je dozvoljeno graditi model. Time se osigurava da sve implementacije imaju iste početne uvjete. Propisani korpus se sastoji od 522 književna djela (pretežno romana) engleskog govornog područja iz istog vremenskog perioda u kojem je pisao Conan Doyle (19.\ stoljeće). Cijeli korpus sadrži oko 50 milijuna riječi, a preuzet je sa stranica Guttenberg projekta\footnote{https://www.gutenberg.org/}, gdje su korištena djela dostupna u cijelosti, bez zakonskih ograničenja.
 
-Unutar ovog rada jezični modeli su vrednovani primarno korištenjem mjere \textit{"perplexity"} na ispitnom skupu uzetom iz samog skupa za treniranje. Vrednovanje na MRSCC zadatku je sekundarno. Razlog je to što cijeli korpus of 50 milijuna riječi zahtjeva računalne resurse i vrijeme za treniranje koji za pisanje ovog diplomskog rada nisu dostupni. Moguće je implementirati modele koji se treniraju nad podskupom od 20 romana (od dostupnih 522), odnosno 1.8 (od dostupnih 50) milijuna riječi. Stoga je nemoguće rezultate testiranja uspoređivati sa rezultatima modela treniranih nad cijelim MRSCC korpusom, od primarnog interesa je realtivna usporedba različitih pristupa izgradnji jezičnih modela.
+Unutar ovog rada jezični modeli su vrednovani primarno korištenjem mjere \textit{"perplexity"} na ispitnom skupu izdvojenom iz korpusa. Vrednovanje na MRSCC zadatku je sekundarno. Razlog je to što cijeli korpus of 50 milijuna riječi zahtjeva računalne resurse i vrijeme treniranja koji za pisanje ovog diplomskog rada nisu dostupni. Moguće je implementirati modele koji se treniraju nad podskupom od 20 romana (od dostupnih 522), odnosno 1.8 milijuna riječi (od dostupnih 50). Stoga je nemoguće rezultate testiranja uspoređivati s rezultatima modela treniranih nad cijelim MRSCC korpusom, od primarnog interesa je realtivna usporedba različitih pristupa izgradnji jezičnih modela.
 
-\section{Predprocesiranje i normalizacija teksta}
+\section{Pretprocesiranje i normalizacija teksta}
 
-Korpus za treniranje dostupan je u obliku u kojem je obljavljen u sklopu Guttenberg projekta. Potrebno je pročistiti ga kako bi se dobio tekst prikladan za izgradnju jezičnog modela. Prvo su maknuta zaglavlja i ostali dodatci samog Guttenberg projekta, pošto oni nisu dio originalnog teksta. Brojevi pisani znamenkama se zamjenjuju posebnim tokenom. Potom se tekst dijeli na rečenice i riječi korištenjem knjižnice za procesiranje prirodnog jezika SpaCy\footnote{https://honnibal.github.io/spaCy/}. Rezultat su riječi grupirane u rečenice, pri čemu riječ sadržava samo slova, bez interpunkcije i praznina.
+Korpus za treniranje dostupan je u obliku u kojem je objavljen u sklopu Guttenberg projekta. Potrebno je pročistiti ga kako bi se dobio tekst prikladan za izgradnju jezičnog modela. Prvo su maknuta zaglavlja i ostali dodatci samog Guttenberg projekta, pošto oni nisu dio originalnog teksta. Brojevi pisani znamenkama se zamjenjuju posebnim tokenom. Potom se tekst dijeli na rečenice i riječi korištenjem knjižnice za procesiranje prirodnog jezika SpaCy\footnote{https://honnibal.github.io/spaCy/}. Rezultat su riječi grupirane u rečenice, pri čemu riječ sadrži samo slova, bez interpunkcije i praznina.
 
-U svakom većem korpusu teksta je razdioba korištenja riječi slična. Mali broj riječi se koristi velik broj puta (to su tipično denominatori, zamjenice itd.), dio riječi je učestao ali ne brojan (često korištene imenice, glagoli i pridjevi), te je konačno velik broj riječi korišten samo nekoliko puta. Pošto računalna složenost svih jezičnih modela raste s veličinom vokabulara, tipično se riječi malog broja pojavljivanja ignoriraju, odnosno zamjenjuju jednim tokenom koji ih predstavlja sve. Osim smanjenja vokabulara, time se iz korpusa pročisti i dobar dio krivo napisanih riječi. Na korištenom podskupu MRSCC korpusa kriterij korištenja riječi je da se pojavila barem 5 puta, u barem 2 književna djela. Time je vokabular od preko 37 tisuća riječi smanjen na manje od 13 tisuća, skoro trostruko, a da pri tome odbačene riječi predstavljaju samo 4.5 posto korpusa.
+U svakom većem korpusu teksta je razdioba broja pojavljivanja riječi slična. Mali broj riječi se koristi velik broj puta (to su tipično denominatori, zamjenice itd.), dio riječi je srednje učestao (često korištene imenice, glagoli i pridjevi), te je konačno velik broj riječi korišten samo nekoliko puta. Pošto računalna složenost svih jezičnih modela raste s veličinom vokabulara, riječi rijetkog pojavljivanja se često ignoriraju, odnosno zamjenjuju jednim tokenom koji ih predstavlja sve. Osim smanjenja vokabulara time se iz korpusa pročisti i dobar dio pogrešno napisanih riječi. Na korištenom podskupu MRSCC korpusa kriterij korištenja riječi je da se pojavila barem 5 puta, u barem 2 književna djela. Time je vokabular od preko 37 tisuća riječi smanjen na manje od 13 tisuća, skoro trostruko, a da pri tome odbačene riječi predstavljaju samo 4.5\% korpusa.
 
-Osim odbacivanja malo korištenih riječi, tekst se često normalizira po pitanju morfološke varijacije. Za velik broj primjena jezičnih modela nije bitno primjerice glagosko vrijeme, stoga je poželjno da se, u domeni engleskog jezika, riječi \textit{"walk"}, \textit{"walks"} i \textit{"walked"} tretiraju kao ista riječ. To povećava broj primjera u kojem jezični model vidi glagol \textit{"walk"}, što omogućava bolju generalizaciju. Naravno, postoje primjene jezičnih modela (automatsko prevođenje, provjera ispravnosti teksta) u kojima su distinkcije po glagolskom vremenu bitne. Unutar ovog rada pretpostavljamo primjenu koja je u skladu s MRSCC. Povezivanje semantike riječi bitnije je od morfološke ispravnosti jezičnod modela.
+Osim odbacivanja malo korištenih riječi, tekst se često normalizira po pitanju morfološke varijacije. Za velik broj primjena jezičnih modela nije bitno primjerice glagosko vrijeme, stoga je poželjno da se, u domeni engleskog jezika, riječi \textit{"walk"}, \textit{"walks"} i \textit{"walked"} tretiraju kao ista riječ. To povećava broj primjera u kojem jezični model vidi glagol \textit{"walk"}, što omogućava bolju generalizaciju. Naravno, postoje primjene jezičnih modela (automatsko prevođenje, provjera ispravnosti teksta) u kojima su distinkcije po glagolskom vremenu bitne. Unutar ovog rada pretpostavlja se primjena koja je prilagođena MRSCC zadatku, gdje je povezivanje semantike riječi bitnije od morfološke ispravnosti.
 
- Za takvu primjenu potrebno je obaviti normalizaciju riječi. Tipični pristupi za normalizaciju teksta su lematizacija \engl{lemmatisation} i skraćivanje riječi na korijen \engl{stemming}. Lematizacija riječ svodi na morfološki neutralan oblik iste vrste (pridjev "sjajan" se ne svodi na imenicu "sjaj" iz koje je izveden), dok skraćivanje na korijen primjenom infleksijskih pravila rezultira grubljom normalizacijom (pridjev "sjajan" biti će svedeno na korijen "sjaj"). Dodatno, ponekad se koristi još agresivniji oblik skraćivanja gdje se od svake riječi uzima samo prvih $k$ slova. Prednost ovog pristupa je da je vrlo jednostavan za implementaciju i dobro radi u jezicima s malim brojem složenih riječi, poput engleskog.
+ Za takvu primjenu potrebno je obaviti morfološku normalizaciju riječi. U tu svrhu se tipično koristi lematizacija \engl{lemmatisation} ili skraćivanje riječi na korijen \engl{stemming}. Lematizacija riječ svodi na morfološki neutralan oblik iste vrste. Primjerice, lema riječi \textit{"govorim"} je \textit{"govoriti"}. Skraćivanje na korijen primjenom pravila infleksije odsijeca sufiks riječi. Takva normalizacija nad riječi \textit{"govorim"} rezultira korijenom \textit{"govori"}. Ponekad se koristi još agresivniji oblik skraćivanja gdje se od svake riječi uzima samo prvih $k$ slova. Prednost ovog pristupa je da je vrlo jednostavan za implementaciju i dobro radi u jezicima s malim brojem složenih riječi, poput engleskog.
 
- Unutar ovog rada isprobano je korištenje lematizatora knjižnice SpaCy i skraćivanje na prvih $k$ slova, pri čemu je parametar $k$ optimiziran. Inicijalno testiranje na MRSCC zadatku, korištenjem 4-grama, je pokazalo da skraćivanje na prva $4$ slova daje najbolje rezultate. Iako se može činiti kao pre-agresivan oblik normalizacije, u skladu je s Google-ovim eksperimentima\footnote{https://www.youtube.com/watch?v=nU8DcBF-qo4}. Korištenjem skraćivanja na prva 4 slova vokabular od oko 38 tisuća riječi je sveden na nešto manje od 10 tisuća prefiksa. Nakon što se primjeni odbacivanje riječi koje su se pojavile manje od pet puta ili u samo jednom romanu MRSCC korpusa, ostaje tek 5133 prefiksa. Istovremeno, manje riječi se odbacuje, iskorištenost korpusa postaje preko 99 posto. 
+ Unutar ovog rada isprobano je korištenje lematizatora knjižnice SpaCy i skraćivanje na prvih $k$ slova, pri čemu je parametar $k$ optimiziran. Inicijalno testiranje na MRSCC zadatku, korištenjem 4-grama, je pokazalo da skraćivanje na prva $4$ slova daje najbolje rezultate. Iako se to može činiti kao odveć destruktivan oblik normalizacije, u skladu je s Google-ovim eksperimentima\footnote{https://www.youtube.com/watch?v=nU8DcBF-qo4}. Korištenjem skraćivanja na prva 4 slova vokabular od oko 38 tisuća riječi je sveden na nešto manje od 10 tisuća prefiksa. Nakon što se primjeni odbacivanje prefiksa koji su se pojavili manje od pet puta, ostaje tek 5133 prefiksa. Iskorištenost korpusa postaje preko 99\%, dakle osjetno više nego kada su se odbacivale nenormalizirane riječi s manje od 5 pojavjlivanja.
 
 
 \section{Rezultati}
 
-U konačnici su vrednovana četiri modela. Prva da se baziraju na prebrojavanju \textit{n}-grama uz aditivno i Kneser-Ney zaglađivanje. Treći model je neuronska mreža, a posljednji je log-bilinearni model.
+U konačnici su vrednovana četiri modela. Prva dva se baziraju na prebrojavanju \textit{n}-grama uz zaglađivanje aditivnom i Kneser-Ney metodom. Treći model je neuronska mreža, a posljednji je log-bilinearni model.
 
-Podatci za treniranje su prvih dvadeset romana iz MRSCC korpusa, koji sveukupno sadrže oko 1.8 milijun riječi. Konačni broj \textit{n}-grama varira s obzirom na parametar \textit{n}, jer se \textit{n}-grami generiraju iz rečenice, nikad ne sadrže riječi iz dvije susjedne rečenice. Iz skupa za treniranje je tisuću \textit{n}-grama izdvojeno za validaciju tijekom treniranja, a pet posto (oko 90 tisuća \textit{n}-grama) za konačno vrednovanje.
+Podatci za treniranje su prvih dvadeset romana iz MRSCC korpusa, koji sveukupno sadrže oko 1.8 milijun riječi. Iz skupa za treniranje je tisuću \textit{n}-grama izdvojeno za validaciju tijekom treniranja, a pet posto (oko 90 tisuća \textit{n}-grama) za konačno vrednovanje.
 
-Za modele zaglađenog prebrojavanja se korištenjem validacijskog skupa optimiraju parametri zaglađivanja \textit{lambda} (kod aditivnog zaglađivanja) i \textit{delta} (kod Kneser-Ney zaglađivanja). Za neuronsku mrežu i log-bilinearni model su hiperparametri modela (L2 regularizacija, veličina mini-grupe) odabrani u skladu s postojećim eksperimentima CITAT, nisu optimirani. Isto vrijedi i za parametre gradijentnog spusta, koristi se naime RMSprop CITAT, koji veličinu gradijentnog pomaka prilagođava automatski, te rijetko zahtjeva eksplicitno podešavanje. Validacijski skup je korišten za određivanje trajanja treniranja. Model se trenira sve dok mjera \textit{perplexity} na validacijskom skupu pada za barem 1 u posljednje tri epohe.
+Za modele zaglađenog prebrojavanja se korištenjem validacijskog skupa optimiraju parametri zaglađivanja \textit{lambda} (kod aditivnog zaglađivanja) i \textit{delta} (kod zaglađivanja Kneser-Ney metodom). Za neuronsku mrežu i log-bilinearni model su hiperparametri modela (L2 regularizacija, veličina mini-grupe) odabrani u skladu s postojećim eksperimentima CITAT, nisu optimirani. Isto vrijedi i za parametre gradijentnog spusta, koristi se naime RMSprop CITAT, koji veličinu gradijentnog pomaka prilagođava automatski, te rijetko zahtjeva pažljivo podešavanje. Validacijski skup je korišten za određivanje trajanja treniranja neuronske mreže i log-bilinearnog modela. Oba modela se treniraju sve dok mjera \textit{perplexity} na validacijskom skupu pada za barem 1 u posljednje tri epohe treniranja.
 
 \subsection{Vrednovanje mjerom \textit{perplexity}}
 
-Tablica \ref{tbl:eval_perplexity} prikazuje rezultate treniranih modela na skupu za testiranje, vrednovanjem mjerom \textit{perplexity}.
+Tablica \ref{tbl:eval_perplexity} prikazuje rezultate treniranih modela na skupu za testiranje, vrednovano mjerom \textit{perplexity}.
 
 \begin{table}[htb]
 \caption{Rezultati vrednovanja jezičnih modela mjerom \textit{perplexity} za \textit{n}-grame zaglađene aditivno i Kneser-Ney metodom, neuronsku mrežu i log-bilinearni model, po stupcima za različite vrijednosti parametra $n$.}
@@ -564,9 +607,9 @@ Log-biliner & 102 & 98 & 98 \\
 
 Najbolje rezultate daje jezični model baziran na prebrojavanju i zaglađivanju Kneser-Ney metodom. Model baziran na aditivnom zaglađivanju daje najgore rezultate, što je u skladu s očekivanjem. Vidljivo je kako rezultati modela baziranih na prebrojavanju padaju sa povećanjem parametra $n$, odnosno veličinom konteksta. Ovo je izravno povezano s već razmatranom posljedicom povećanog konteksta, u smislu sve veće rijetkosti pojavljivanja duljih \textit{n}-grama u ograničenom korpusu. Korištenjem cijelog MRSCC korpusa bi rezultati za dulje kontekste ($n \in \{5, 6\}$) svakako bili osjetno bolji, čak i bolji od rezultata kraćih ($n \in \{3, 4\}$) CITAT.
 
-Rezultati jezičnih modela baziranih na neuronskoj mreži i log-bilinearnom modelu daju dobre rezultate. Poznato je da među ta dva modela log-bilinerani radi bolje CITAT, što pokazuju i pokusi izvedeni u ovom radu. Zanimljiv aspekt ovih modela je kako njihove performanse rastu povećanjem konteksta. Razlog tomu je najvjerojatnije to što se distribuirane reprezentacije riječi u tim modelima računaju na temelju svih riječi u kontekstu. Stoga dulji kontekst modelu daje više informacije o međusobnoj sličnosti riječi te je učenje reprezentacija kvalitetnije. Istovremeno, za razliku od modela baziranih na prebrojavanju, neuronska mreža i log-bilinearni model su manje osjetljivi na rjetkost pojavljivanja duljeg konteksta, što izravno proizlazi iz sposobnosti modela za semantički slične riječi izluče slične reprezentacije.
+Rezultati jezičnih modela baziranih na neuronskoj mreži i log-bilinearnom modelu daju dobre rezultate. Poznato je da među ta dva modela log-bilinerani radi bolje CITAT, što pokazuju i pokusi izvedeni u ovom radu. Zanimljiv aspekt ovih modela je kako njihove performanse rastu povećanjem konteksta. Uzrok poboljšanja je najvjerojatnije to što se distribuirane reprezentacije riječi u tim modelima računaju na temelju svih riječi u kontekstu. Stoga dulji kontekst modelu daje više informacije o međusobnoj sličnosti riječi te je učenje reprezentacija kvalitetnije. Istovremeno, za razliku od modela baziranih na prebrojavanju, neuronska mreža i log-bilinearni model su manje osjetljivi na rjetkost pojavljivanja duljeg konteksta, što izravno proizlazi iz sposobnosti modela da za semantički slične riječi pronađu slične reprezentacije.
 
-Pitanje se postavlja zašto s obzirom na sve njihove prednosti, neuronska mreža i log-bilinearni model daju lošije rezultate od modela zaglađenog Kneser-Ney metodom. Razlog tomu je vrlo malen vokabular korišten za usporedbu dotičnih modela. Korištenje vrlo malog podskupa MRSCC korpusa, uz skraćivanje na prva četiri slova, rezultira iznimno malim vokabularom. Pošto su metode bazirane na prebrojavanju osjetljivije na veličinu vokabulara (jer ne koriste distribuirane reprezentacije), korištenjem većeg vokabulara za očekivati je da log-bilinearni model postigne bolje rezultate, u skladu s postojećim eksperimentima CITAT. Bitno je prisjetiti se ranije napomene kako dobiveni rezultati nisu prikladni za usporedbu s rezultatima iz drugih radova zbog korištenja različitog korpusa (podskup MRSCC korpusa naspram cijelog) i smanjenog vokabulara.
+Pitanje se postavlja zašto, s obzirom na sve njihove prednosti, neuronska mreža i log-bilinearni model daju lošije rezultate od modela zaglađenog Kneser-Ney metodom. Razlog tomu je veličina vokabulara. Korištenje vrlo malog podskupa MRSCC korpusa, uz skraćivanje na prva četiri slova, rezultira iznimno malim vokabularom. Pošto su metode bazirane na prebrojavanju osjetljivije na veličinu vokabulara (jer ne koriste distribuirane reprezentacije), korištenjem većeg vokabulara za očekivati je da log-bilinearni model postigne bolje rezultate, u skladu s postojećim eksperimentima CITAT. Bitno je prisjetiti se ranije napomene kako dobiveni rezultati nisu prikladni za usporedbu s rezultatima iz drugih radova zbog korištenja različitog korpusa (podskup MRSCC korpusa naspram cijelog) i smanjenog vokabulara.
 
 \subsection{Uspješnost modela na MRSCC zadatku}
 
@@ -590,13 +633,13 @@ Log-biliner & 0.25 & 0.27 & 0.27 \\
 \end{tabular}
 \end{table}
 
-Rezultati na MRSCC zadatku su u skladu s rezultatima korištenjem mjere \textit{perplexity}. Prebrojavanje \textit{n}-grama korištenjem aditivnog zaglađivanja daju najlošije rezultate (jednake uspješnosti nasumičnog odabira), dok prebrojavanje korištenjem zaglađivanja Kneser-Ney i log-bilinearni model daju bolje, približno jednake rezultate. I dalje je vidljivo kako modeli bazirani na prebrojavanju rade lošije kada je kontekst dulji, a log-bilinearni model bolje. Neuronska mreža konzistentno daje osrednje rezultate.
+Rezultati na MRSCC zadatku su u skladu s rezultatima korištenjem mjere \textit{perplexity}. Prebrojavanje \textit{n}-grama uz aditivno zaglađivanje daje najlošije rezultate (jednake uspješnosti nasumičnog odabira), dok prebrojavanje korištenjem zaglađivanja Kneser-Ney i log-bilinearni model daju bolje, približno jednake rezultate. I dalje je vidljivo kako modeli bazirani na prebrojavanju rade lošije kada je kontekst dulji, a log-bilinearni model bolje. Neuronska mreža konzistentno daje osrednje rezultate.
 
-U radu unutar kojeg su se jezični modeli trenirali korištenjem cijelog MRSCC korupsa, najbolji rezultat postignut je korištenjem log-bilinearnog modela treniranog nad 10-gramima, prijavljena je 0.547 uspješnost (najbolja poznata u trenutku pisanja ovog rada). U istom radu model baziran na zaglađenom prebrojavanju \textit{n}-grama postiže 0.391 usješnost, korištenjem 4-grama. Čini se stoga da je log-bilinearni model generalno bolji, ali valja uzeti u obzir i trošak treniranja tavog modela.
+U radu unutar kojeg su se jezični modeli trenirali korištenjem cijelog MRSCC korupsa, najbolji rezultat postignut je korištenjem log-bilinearnog modela treniranog nad 10-gramima, prijavljena je 0.547 uspješnost (najbolja poznata u trenutku pisanja ovog rada). U istom radu model baziran na prebrojavanju 4-grama uz zaglađivanje Kneser-Ney metodom postiže 0.391 usješnost. Čini se stoga da je log-bilinearni model generalno bolji, ali valja uzeti u obzir i trošak treniranja takvog modela.
 
 \subsection{Trajanje treniranja}
 
-Neuronske mreže i log-bilinearni model treniraju se iterativnom metodom gradijentnog smanjenja greške. Za velike modele (modele koji imaju velik broj slobodnih parametara) i velike skupove podataka za treniranje, učenje modela može zahtjevati veliku količnu vremena. Stoga je unutar ovog rada testirano i vrijeme potrebno za treniranje dotičnih modela. Modeli bazirani na prebrojavanju zahtjevaju samo jedan prolazak kroz \textit{n}-grame skupa za treniranje, i malu količinu dodatne analize. U pravilu treniranje i na slabijim modernim centralnim procesorima traje tek nekoliko minuta. Modeli bazirani na iterativnom smanjenju greške kompleksnijim algoritmima analiziraju skup za treniranje kroz veći broj iteracija (u ovom radu prosječno tridesetak iteracija). Stoga su trenirani na snažnom modernom centralnom procesoru\footnote{Intel i7-4720, 2.6GHz, 4 fizičke jezgre, 8-dretvi, 16GB RAM} (CPU), i na modernom grafičkom procesoru srednje klase\footnote{nVidia GeForce GTX 960M, 4GB RAM, 640 programabilnih CUDA jezgri} (GPU). Trajanje treniranja iterativnih modela prikazano je u tablici \ref{tbl:eval_time}. Bitno je napomenuti kako vremena treniranja ovise o mnogim čimbenicima kao što su optimalnost implementacije, kriterij zaustavljanja iterativnog treniranja, veličina minigrupe pri iterativnom treniranju, tip gradijentnog spusta koji se koristi itd. Stoga navedena vremena treba tumačiti kao vrlo okvirna, navedena su samo radi međusobne usporedbe.
+Neuronske mreže i log-bilinearni model treniraju se iterativnom metodom gradijentnog smanjenja greške. Za velike modele (modele koji imaju velik broj parametara) i velike skupove podataka za treniranje, učenje modela može biti vremenski trajno. Stoga je unutar ovog rada testirano i vrijeme potrebno za treniranje dotičnih modela. Modeli bazirani na prebrojavanju zahtjevaju samo jedan prolazak kroz \textit{n}-grame skupa za treniranje i malu količinu dodatne analize. Njihovo treniranje u pravilu traje tek nekoliko minuta. Modeli bazirani na iterativnom smanjenju greške kompleksnijim algoritmima analiziraju skup za treniranje kroz veći broj iteracija (u ovom radu prosječno tridesetak iteracija). Stoga su trenirani na snažnom modernom centralnom procesoru\footnote{Intel i7-4720, 2.6GHz, 4 fizičke jezgre, 8-dretvi, 16GB RAM} (CPU), i na modernom grafičkom procesoru srednje klase\footnote{nVidia GeForce GTX 960M, 4GB RAM, 640 programabilnih CUDA jezgri} (GPU). Trajanje treniranja iterativnih modela prikazano je u tablici \ref{tbl:eval_time}. Bitno je napomenuti kako vremena treniranja ovise o mnogim čimbenicima kao što su optimalnost implementacije, kriterij zaustavljanja iterativnog treniranja, veličina minigrupe pri iterativnom treniranju, tip gradijentnog spusta koji se koristi itd. Stoga navedena vremena treba tumačiti kao vrlo okvirna, navedena su samo radi međusobne usporedbe.
 
 \begin{table}[htb]
 \caption{Trajanje treniranja modela, izraženo u SAT:MINUTE obliku.}
@@ -610,7 +653,7 @@ Model & 3 & 4 & 5 \\
 \midrule
 Prebrojavanje \textit{n}-grama CPU &  0:01 & 0:01 & 0.01 \\
 Neuronska mreža, GPU & 1:47 & 2:15 & 2:17 \\
-Neuronska mreža, CPU & 13.38 & 13:52 & 14.20 \\
+Neuronska mreža, CPU & 13:38 & 13:52 & 14.20 \\
 Log-bilinear GPU & 0:49 & 0:48 & 0:46 \\
 Log-bilinear CPU & 8:07 & 8:01 & 6:56 \\
 \bottomrule
@@ -618,15 +661,15 @@ Log-bilinear CPU & 8:07 & 8:01 & 6:56 \\
 \end{table}
 
 
-Vidljivo je kako je vrijeme trajanja treniranja modela koji se baziraju na prebrojavanju neusporedivo kraće od treniranja neuronskih mreža i log-bilinearnog modela. Uzme li se u obzir da model koji koristi zaglađivanje Kneser-Ney metodom postiže vrlo dobre rezultate, lošije ali usporedive s rezultatima log-bilinearnog modela, taj model ostaje kompetitivan u situacijama gdje su računalni resursi ili vrijeme treniranja ograničeni. Nadalje, vidljive su ogromne razlike između vremena treniranja korištenjem centralnog odnosno grafičkog procesora. Pri tome je bitno uzeti u obzir i to da je korišten CPU visoke klase (u vrijeme pisanja rada), a korišteni GPU više-srednje klase. Usporeba vrhunskih centralnih i grafičkih procesora rezultirala bi još većom disproporcijom.
+Vidljivo je kako je vrijeme trajanja treniranja modela koji se baziraju na prebrojavanju neusporedivo kraće od treniranja neuronskih mreža i log-bilinearnog modela. Uzme li se u obzir da model koji koristi zaglađivanje Kneser-Ney metodom postiže vrlo dobre rezultate, taj model ostaje kompetitivan u situacijama gdje su računalni resursi ili vrijeme treniranja ograničeni. Nadalje, vidljive su velike razlike između vremena treniranja korištenjem centralnog odnosno grafičkog procesora. Pri tome je bitno uzeti u obzir i to da je korišten CPU visoke klase (u vrijeme pisanja rada), a korišteni GPU više-srednje klase. Usporeba vrhunskih centralnih i grafičkih procesora rezultirala bi još većom disproporcijom.
 
-Zanimljivo je kako kod log-bilinearnog modela kraći kontekst rezultira sporijim treniranjem. Razlog tome je povećanje broja \textit{n}-grama kada se koristi kraći kontekst, što je posljedica toga da se \textit{n}-grami generiraju iz rečenica, bez preklapanja, što rezultira s $N - n + 1$ \textit{n}-gramom po rečenici, gdje $N$ označava broj riječi u rečenici. Tako se iz istog korpusa rečenica generira čak 4\% više trigrama nego 4-grama. Istovremeno, dodatne računske operacije potrebne za treniranje korištenjem duljeg konteksta imaju manji utjecaj zbog visokog paralelizma računanja da grafičkim karticama.
+Zanimljivo je kako kod log-bilinearnog modela kraći kontekst rezultira sporijim treniranjem. Razlog tome je povećanje broja \textit{n}-grama kada se koristi kraći kontekst, što je posljedica toga da se \textit{n}-grami generiraju iz rečenica, bez preklapanja. Stoga se iz svake rečenice generira $N - n + 1$ \textit{n}-gram, gdje $N$ označava broj riječi u rečenici. Tako se iz istog korpusa rečenica generira čak 4\% više trigrama nego 4-grama. Istovremeno, dodatne računske operacije potrebne za treniranje korištenjem duljeg konteksta imaju relativno mali utjecaj kada se koriste optimalne implementacije linearne algebre.
 
 \chapter{Zaključak}
 
-U ovom diplomskom radu vrednovani su jezični modeli izgrađeni korištenjem tri bitno različita pristupa. Prvi pristup, koji se već dugo koristi, bazira se na prebrojavanju \textit{n}-grama. Drugi pristup bazira se na neuronskoj mreži definiranoj kao klasifikator riječi koja slijedi proizvoljnom kontekstu prethodnih riječi. Treći pristup je najnoviji, bazira se na log-bilinearnom modelu koji ima znatno manji broj parametara od neuronske mreže.
+U ovom diplomskom radu vrednovani su jezični modeli izgrađeni korištenjem tri bitno različita pristupa. Prvi pristup, koji se već dugo koristi, bazira se na prebrojavanju \textit{n}-grama. Drugi pristup bazira se na neuronskoj mreži. Treći pristup je najnoviji, bazira se na log-bilinearnom modelu koji ima znatno manji broj parametara od neuronske mreže.
 
-Vrednovanje navedenih modela korištenjem podskupa korpusa \textit{Microsoft Research Sentence Completion Challenge} pokazala je kako najbolje rezultate daju model baziran na prebrojavanju i zaglađivanju Kneser-Ney metodom, i log-bilinearni model. Pri tome je pokazano da na manjem korpusu prebrojavanje daje nešto bolje rezultate, dok ispitivanja u drugim radovima pokazuju da na većem korpusu log-bilinearni model daje najbolje rezultate. Ispitano je i vrijeme potrebno za treniranje svih korištenih modela, pri čemu se pokazalo da je treniranje modela baziranih na prebrojavanju neusporedivo brže od treniranja neuronske mreže i log-bilinearnog modela. U tom smislu su modeli bazirani na prebrojavanju i dalje primjenjivi, bez obzira na relativno dugu povijest korištenja (prva implementacija je bila 1995.\ godine).
+Vrednovanje navedenih modela korištenjem podskupa korpusa \textit{Microsoft Research Sentence Completion Challenge} pokazala je kako najbolje rezultate daju model baziran na prebrojavanju i zaglađivanju Kneser-Ney metodom, i log-bilinearni model. Pri tome je pokazano da na manjem korpusu prebrojavanje daje nešto bolje rezultate, dok ispitivanja u drugim radovima pokazuju da na većem korpusu log-bilinearni model daje najbolje rezultate. Ispitano je i vrijeme potrebno za treniranje svih korištenih modela, pri čemu se pokazalo da je treniranje modela baziranih na prebrojavanju neusporedivo brže od treniranja neuronske mreže i log-bilinearnog modela. U tom smislu je jezični model baziran na prebrojavanju i zaglađivanju Kneser-Ney metodom i dalje primjenjiv, bez obzira na relativno dugu povijest korištenja (prva implementacija je bila 1995.\ godine).
 
 U napretku jezičnih tehnologija, poput prepoznavanja govora i automatiziranog prevođenja, jezični modeli imaju ključnu ulogu. Uz to oni nisu ograničeni samo na tu primjenu, mogu se koristiti za analizu i klasifikaciju teksta, detekciju grešaka u tekstu i za mnoge druge zadatke. Stoga je za očekivati da će se intenzivno istraživanje i razvoj ovog područja nastaviti. Trenutno je u području strojnog učenja i izadi prediktivnih modela snažan trend korištenja dubokih i konvolucijskih neuronskih mreža. Već postoje radovi koji primjenom ovih tehnika grade još sposobnije jezične modele. Njihova sposobnost prepoznavanja semantičkih uzoraka u tekstu se polako ali neosporivo približava ljudskoj. U tom smislu su jezični modeli jedna od krucijalnih komponenata izgradnje strojeva čija bi "inteligencija" bila usporediva s ljudskom.
 

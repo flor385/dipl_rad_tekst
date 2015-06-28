@@ -334,11 +334,69 @@ Mreža je prikazana na slici \ref{fig:nnet}.
 \section{Učenje}
 \label{sec:nnet_training}
 
-Algoritam propagacije greške unatrag bazira se na gradijentnom spustu s obzirom na funkciju greške mreže. S obzirom na broj primjera koji se koristi za izračun gradijenta u svakom koraku gradijentnog spusta, postoji par inačica učenja. Gradijent se može računati na temelju svih primjera za učenje, što se naziva grupno \engl{batch} učenje. U praksi se pokazalo kako je efikasnije podijeliti skup za učenje na mini-grupe \engl{minibatch} i koristiti njih za izračun gradijenta. Time se parametri mreže promjene više puta u svakoj epohi učenja (prolasku kroz sve primjere za učenje), što ubrzava učenje. Istovremeno, gradijent nije isti za svaku mini-grupu, što povećava otpornost na zaglavljivanje gradijentnog spusta u lokalnim minimumima. Ekstrem korištenja mini-grupa je podešavanje parametara mreže nakon evaluacije samo jednog primjera za učenje, što se naziva pojedinačno \engl{online} učenje. Ovaj ekstremni pristup rezultira nestabilnim gradijentom, zbog čega se mora smanjiti stopa učenja, i manjom efikasnošću korištenja računalnih resursa uslijed otežane paralelizacije. Stoga se najčešće koriste mini-grupe. Konkretna veličina mini-grupe ovisi domeni primjene, arhitekturi mreže i načinu učenja. Ne postoji univerzalno prikladna veličina.
+\subsection{Gradijentno smanjenje greške}
 
-Osim "običnog" gradijentnog spusta, koji mjenja parametre mreže za vrijednost negativnog gradijenta pomnoženog sa stopom učenja, postoje i modificirane inačice. One modificraju smjer ili veličinu gradijenta kako bi ubrzale učenje. Ta modifikacija se tipično bazira na gradijentu prethodnih koraka učenja. Najjednostavniji primjer modifikacije gradijenta je korištenje "momenta", pri čemu se gradijent kroz više koraka akumulira u "moment" kretanja (analogno momentu kretanja kuglice određene mase koja se kotrlja u smjeru nagiba, ali i u smjeru trenutne brzine). U ovom radu korištena je inačica "RMSprop" \engl{resilient mean square propagation} \cite{Tieleman2012}. Radi se o obliku gradijentnog spusta koji od izračunatog gradijenta uzima samo smjer, bez iznosa. Količinu promjene gradijenta određuje automatski, na temelju iznosa gradijenta prethodnih koraka.
+Algoritam propagacije greške unatrag bazira se na gradijentnom spustu s obzirom na funkciju greške mreže. Ukratko, radi se o algoritmu koji iterativno smanjuje grešku modela na skupu primjera za učenje. Detaljan opis algoritma dostupan je u velikoj količini literature na tu temu. Slijedi kratak opis greške i gradijenata koji se koriste pri optimizaciji jezičnog modela temeljenog na neuronskoj mreži.
+
+Radi čitljivosti izraza će se prvo razmotriti optimizacija modela koji modelira proizvoljnu distribuciju $X$. Vjerojatnost nekog primjera te distribucije označena je $P(x)$. Distribucija je modelirana \textit{softmax} funkcijom.
+
+
+\begin{equation}
+\begin{split}
+P(x) 
+  & = \text{softmax}_{x}\left(f(x)\right) \\[1ex]
+  & = \frac{\exp\left( f(x) \right)}{\sum_{x' \in X} \exp\left(\ f(x') \right)}
+\end{split}
+\end{equation}
+
+Pri tome je $f(x)$ proizvoljna funkcija koja preslikava prostor $X$ u prostor $\mathbb{R}$. U nastavku će $f(x)$ biti zamjenjena konkretnom funkcijom koja se koristi u jezičnom modelu temeljenom na neuronskoj mreži.
+
+Za korištenje algoritma propagacije greške unatrag potrebno je definirati što je greška. U izradi probabilističkih prediktivnih modela, smisleno je grešku definirati kao lošu procjenu vjerojatnosti. Konkretno, poželjno je povećavati vjerojatnost viđenih primjera iz skupa za učenje. Stoga se kao grešku probabilističkih modela često koristi negativan logaritam vjerojatnosti.
+
+\begin{equation}
+\label{eq:neg_log_p}
+E(x) = - \ln \left( P(x) \right)
+\end{equation}
+
+Pri tome je $E(x)$ greška modela pri procjeni vjerojatnosti primjera $x$. Može se primjetiti kako je greška to veća što je vjerojatnost $P(x)$ manja. U tom smislu ovakva formulacija greške uči model da daje što veću vjerojatnost primjerima $x$ iz skupa za učenje.
+
+Za gradijentno smanjenje greške potrebno je izračunati njen negativni gradijent s obzirom na proizvoljni parametar modela $\theta$.
+
+\begin{equation}
+\setlength{\jot}{12pt}
+\label{eq:grad_softmax}
+\begin{split}
+- \frac{\partial}{\partial \theta} E(x)
+  & = \frac{\partial}{\partial \theta} \ln \left( P(x) \right)  \\
+  & = \frac{\partial}{\partial \theta} \ln \left( \frac{\exp\left( f(x) \right)}{\sum_{x' \in X} \exp\left(\ f(x') \right)} \right) \\
+  & = \frac{\partial}{\partial \theta}f(x)  - \frac{\partial}{\partial \theta} \ln \left( \sum_{x' \in X} \exp\left(\ f(x') \right) \right) \\
+  & = \frac{\partial}{\partial \theta}f(x)  - \frac{1}{\sum_{x' \in X} \exp\left(\ f(x') \right)} \frac{\partial}{\partial \theta} \sum_{x' \in X} \exp\left(\ f(x') \right) \\
+  & = \frac{\partial}{\partial \theta}f(x)  - \sum_{x' \in X} \frac{\exp\left(\ f(x') \right)}{\sum_{x" \in X} \exp\left(\ f(x") \right)} \frac{\partial}{\partial \theta} f(x') \\
+  & = \frac{\partial}{\partial \theta}f(x) - \sum_{x' \in X} P(x') \frac{\partial}{\partial \theta} f(x') \\
+- \frac{\partial}{\partial \theta} E(x)
+  & = \frac{\partial}{\partial \theta}f(x) - \mathbb{E}_{x' \in X} \left[ \frac{\partial}{\partial \theta} f(x') \right] 
+\end{split}
+\end{equation}
+
+Pri tome $\mathbb{E}[...]$ označava očekivanu vrijednost za $...$ od strane modela. Iako račun nije sasvim trivijalan, ishod je vrlo eleganatan i lako ga je protumačiti. Dakle, kako bi se smanjila greška modela, potrebno je proizvoljni parametar $\theta$ promjeniti u smjeru negativnog gradijenta greške. Za vjerojatnost definiranu putem \textit{softmax} funkcije, to znači da treba povećati vijednost $f(x)$ za onaj $x$ koji je "ispravan", a smanjiti za sve ostale. Ovo putem funkcije \textit{softmax} dovodi do povećanja vjerojatnosti viđenog primjera $P(x)$.
+
+Preostaje još razmotriti funkciju $f(x)$. U jezičnom modelu temeljenom na neuronskoj mreži primjer $x$ je zapravo slijed riječi $w_{i - n + 1}, ..., w_i$. Pri tome se posljednja riječ $w_i$ ne koristi kao "ulaz" u mrežu već za indikaciju koji od \textit{softmax} neurona predstavlja ispravni izlaz. Funkcija nad ulaznim riječima koja se daje \textit{softmax} funkciji je, u skladu s izrazom \ref{eq:lnnet}, sljedeća.
+
+\[
+f(w_{i - n + 1}, ..., w_i) = \left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W_{w_i} + b_{w_i}
+\]
+
+Ovo je obična linearna funkcija koja se lako derivira po bilo kojem od parametara iz matrica $W$ ili vektora $b$, što je prepušteno čitatelju. Bitno je primjetiti kako gradijent matrice $W$ ima vrijednost koja nije nula samo za stupce te matrice koji odgovaraju riječi $w_i$. Ovo je izravna posljedica toga što mreža ima broj izlaza koji odgovara veličini vokabulara $|V|$. Samo po sebi ovo nije začuđujuće, istaknuto je samo zbog usporedbe sa sljedećim opisanim modelom, u poglavlju \ref{sec:lbl}.
+
+Parcijana derivacija funkcije $f(...)$ se uvrštava u gradijent \textit{softmax} funkcije prikazan u izrazu \ref{eq:grad_softmax}. Algoritam propagacije greške unatrag koristi konačni gradijent za podešavanje parametara tako da se greška na primjeru za učenje smanji, odnosno vjerojatnost tog primjera poveća. 
 
 Specifičnost jezičnog modela baziranog na neuronskoj mreži, u odnosu na standardne unaprijedne slojevite mreže, je korištenje matrice reprezentacija $R$. Odabir reprezentacije specifične riječi (retka matrice $R$) nije standardna derivabilna matematička operacija. Može se postaviti pitanje kako matricu $R$ optimirati gradijentnim spustom. Rješenje je u tome da se matrica ne optimira u cjelosti, već se optimiraju reprezentacije riječi korištene u trenutnom koraku gradijentnog spusta, koje se tretiraju kao samostalni parametar, neovisan o matrici $R$.
+
+\subsection{Podešavanje gradijentnog spusta}
+
+S obzirom na broj primjera koji se koristi za izračun gradijenta u svakom koraku gradijentnog spusta, postoji par inačica učenja. Gradijent se može računati na temelju svih primjera za učenje, što se naziva grupno \engl{batch} učenje. U praksi se pokazalo kako je efikasnije podijeliti skup za učenje na mini-grupe \engl{minibatch} i koristiti njih za izračun gradijenta. Time se parametri mreže promjene više puta u svakoj epohi učenja (prolasku kroz sve primjere za učenje), što ubrzava učenje. Istovremeno, gradijent nije isti za svaku mini-grupu, što povećava otpornost na zaglavljivanje gradijentnog spusta u lokalnim minimumima. Ekstrem korištenja mini-grupa je podešavanje parametara mreže nakon evaluacije samo jednog primjera za učenje, što se naziva pojedinačno \engl{online} učenje. Ovaj ekstremni pristup rezultira nestabilnim gradijentom, zbog čega se mora smanjiti stopa učenja, i manjom efikasnošću korištenja računalnih resursa uslijed otežane paralelizacije. Stoga se najčešće koriste mini-grupe. Konkretna veličina mini-grupe ovisi domeni primjene, arhitekturi mreže i načinu učenja. Ne postoji univerzalno prikladna veličina.
+
+Osim "običnog" gradijentnog spusta, koji mjenja parametre mreže za vrijednost negativnog gradijenta pomnoženog sa stopom učenja, postoje i modificirane inačice. One modificraju smjer ili veličinu gradijenta kako bi ubrzale učenje. Ta modifikacija se tipično bazira na gradijentu prethodnih koraka učenja. Najjednostavniji primjer modifikacije gradijenta je korištenje "momenta", pri čemu se gradijent kroz više koraka akumulira u "moment" kretanja (analogno momentu kretanja kuglice određene mase koja se kotrlja u smjeru nagiba, ali i u smjeru trenutne brzine). U ovom radu korištena je inačica "RMSprop" \engl{resilient mean square propagation} \cite{Tieleman2012}. Radi se o obliku gradijentnog spusta koji od izračunatog gradijenta uzima samo smjer, bez iznosa. Količinu promjene gradijenta određuje automatski, na temelju iznosa gradijenta prethodnih koraka.
 
 \section{Složenost mreže}
 
@@ -391,6 +449,7 @@ P(w_i | w_{i - (n - 1)}, ... , w_{i - 1})
 $W$ označava matricu preslikavanja $(n - 1)$ $d$-dimenzionalne reprezentacije na ulazu u jedan $d$-dimenzionalni vektor. Nakon što je time ulazni vektor reprezentacija reduciran s $(n - 1)$ $d$ na $d$ dimenzija, računa se skalarni produkt s reprezentacijom uvjetovane riječi, te se dodaje njena pristranost. Navedene operacije su linearne, a rezultiraju skalarom. Nazivaju se bilinearnom funkcijom jer se prethodni kontekst i uvjetovana riječ razmatraju kao zasebne varijable. Rezultirajući skalar se eksponencira, a rezultat je proporcionalan vjerojatnosti, što definira log-bilinearni model. Kako bi proporcionalnost postala jednakost, potrebno je normalizirati ju particijskom funkcijom.
 
 \begin{equation}
+\label{eq:p_lbl}
 P(w_i | w_{i - (n - 1)}, ... , w_{i - 1}) 
   = \frac{\exp\left(\left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W R_{w_i}^T + b_{w_i}\right)}
   {\sum_{w \in V} \exp\left(\left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W R_{w}^T + b_{w}\right)}
@@ -409,7 +468,127 @@ Log-bilinearni model je prikazan na slici \ref{fig:lbl}.
 
 \section{Učenje}
 
-Log-linearni modeli se, kao i unaprijedne neuronske mreže, u pravilu treniraju iterativno, gradijentnim smanjenjem funkcije greške. Isti princip učenja primjenjiv je i na log-bilinearni model. Sve navedeno u poglavlju \ref{sec:nnet_training} vrijedi i za treniranje log-bilinearnog modela, a dostupni su i brojni materijali na temu gradijetnog spusta i algoritma propagacije greške unatrag.
+\subsection{Gradijentni spust}
+
+Log-linearni modeli se, kao i unaprijedne neuronske mreže, u pravilu treniraju iterativno, gradijentnim smanjenjem funkcije greške. Isti princip učenja primjenjiv je i na log-bilinearni model. Sve navedeno u poglavlju \ref{sec:nnet_training} vrijedi i za treniranje log-bilinearnog modela. Slijedi razmatranje razlika.
+
+Log-bilinearni model je probabilistički definiran, stoga se funkcija greške modela može definirati u skladu s izrazom \ref{eq:neg_log_p}. Gradijent greške, s obzirom na korištenu \textit{softmax} funkciju je stoga jednak kao u izrazu \ref{eq:grad_softmax}. U tom pogledu su log-bilinearni model i neuronska mreža jednaki. Razlika je u funkciji koja definira "ulaz" u funkciju \textit{softmax}. Kod log-bilinearnog modela ona je definirana na sljedeći način.
+
+\[
+f(w_{i - n + 1}, ..., w_i) = \left[R_{w_{i - (n - 1)}}, ..., R_{w_{i - 1}}\right] W R_{w_i}^T + b_{w_i}
+\]
+
+I ovdje se, kao i kod neuronske mreže, radi o linearnoj funkciji. Razlika je u tome što se matrica raspodjeljenih reprezentacija koristi dva puta, što funkciju čini bilinearnom. Osim toga je bitna razlika to što je matrica $W$ osjetno manja, ne ovisi o veličini vokabulara $|V|$. Ovo se odražava i na gradijente elemenata matrice $W$. Konkretno, na svaki element te matrice utječe svaka riječ vokabulara, za svaki primjer tijekom gradijentnog spusta. U tom smislu je gradijent log-bilinearnog modela "gušći", što poboljšava učenje. Istovremeno, s obzirom na manji broj elemenata, matrica $W$ ima manje stupnjeva slobode nego u neuronskoj mreži, što otežava učenje, ali često poboljšava generalizacijsku sposobnost modela. Parcijalno deriviranje ove linearne funkcije i uvrštavanje gradijenta u konačni gradijent \textit{softmax} funkcije nije izazovan i prepušta se čitatelju.
+
+\subsection{Numerički primjer}
+
+Slijedi jednostavan primjer koji konkretno numerički prikazuje proces učenja log-bilinearnog jezičnog modela gradijentnim spustom. Primjer se bazira na vokabularu veličine $|V| = 4$ i veličini raspodjeljenih reprezentacija $d = 2$. Modelira se distribucija trigrama, dakle $n = 3$. Radi sažetosti se pristranosti riječi $b$ ne koriste.
+
+Pri izradi modela prvo je potrebno inicijalizirati mu parametre nasumičnim vrijednostima. U ovom primjeru se svaki parametar uzorkuje iz uniformne distribucije na intervalu $[-1, 1]$. Ova inicijalizacija je korištenja samo radi ilustracije, za generalnu raspravu o inicijalizaciji parametara može se konzultirati literatura iz područja umjetnih neuronskih mreža.
+
+Parametri modela, matrice $R$ i $W$, inicijalizirani su nasumično na sljedeće vrijednosti.
+
+\[ R = \left( \begin{array}{cc}
+ 0.40 &  0.85 \\
+ 0.60 &  0.63 \\
+ 0.26 & -0.18 \\
+-0.12 & -0.82
+\end{array} \right),
+%
+\hspace{0.5cm} W =
+\left( \begin{array}{cc}
+-0.40 &  0.69 \\
+ 0.22 & -0.85 \\
+ 0.77 & -0.94 \\
+ 0.20 &  0.99
+ \end{array} \right)
+\]
+
+Pri tome svaki redak matrice $R$ odgovara jednoj rječi vokabulara (jednostavnosti radi riječi će biti naprosto indeksi 0, 1, 2 i 3). Matrica $W$ služi za preslikavanje prethodnog konteksta od $(n - 1)$ riječi u jedan $d$-dimenzionalni vektor.
+
+Razmatra se učenje trigrama $3, 0, 2$. Dakle, modelira se vjerojatnost $P(2 | 3, 0)$. Ovaj primjer će biti proveden kroz izračun vjerojatnosti u skladu s izrazom \ref{eq:p_lbl}. Potom će se parametri modela promjeniti gradijentnim spustom tako da se poveća vjerojatnost primjera $P(2 | 3, 0)$.
+
+Raspodjeljene reprezentacije uvjetujućih riječi $3, 0$ dobivaju se iz matrice $R$.
+
+\[
+\left[R_3, R_0\right] = 
+\left[ \begin{array}{cccc} -0.12 & -0.82 & 0.40 & 0.85 \end{array} \right]
+\]
+
+Dobiveni vektor se preslikava u $d = 2$ dimenzije korištenjem matrice $W$.
+
+\[
+\left[R_3, R_0\right] W =
+\left[ \begin{array}{cccc} 0.36 & 1.09 \end{array} \right]
+\]
+
+Potom se računa podudarnost dobivenog $d$-dimenzionalnog vektora sa svakom riječi vokabulara. Dobiva se četiri skalara, po jedan za svaku riječ.
+
+\[
+\left[R_3, R_0\right] W R^T= 
+\left[ \begin{array}{cccc} 1.08 & 0.91 & -0.10 & -0.95 \end{array} \right]
+\]
+
+Eksponenciranjem tih skalara i normalizacijom se oni preslikavaju u vjerojatnosni prostor. Konkretno, dobivaju se procjene vjerojatnosti $P(w | 3, 0), \forall w \in |V|$.
+
+\[
+P(w | 3, 0), \forall w \in |V| =
+\left[ \begin{array}{cccc} 0.44 & 0.37 & 0.13 & 0.06 \end{array} \right]
+\]
+
+Može se vidjeti kako model procjenjuje vjerojatnost $P(2 | 3, 0)$ sa $0.13$. Model dakle "vjeruje" kako je vjerojatnije da nakon riječi $3, 0$ slijede riječi $0$ ili $1$. S obzirom da se u skupu za učenje pojavio primjer $3, 0, 2$, vjerojatnost da nakon riječi $3, 0$ slijedi $2$ treba povećati.
+
+Model se mjenja s obzirom na gradijent greške. Greška modela za viđeni primjer slijedi.
+
+\[
+E(3, 0, 2) = - \ln \left( P(2 | 3, 0) \right) = 2.04
+\]
+
+Sve parametre modela potrebno je promjeniti tako se greška smanji. Količinu promjene svakog parametra računa se kao negativni (jer se smanjuje) gradijent greške s obzirom na taj parametar. Izračun gradijenta će biti prikazan s obzirom na nasumično odabrani parametar $w_{2, 0}$, element matrice $W$ koji je u trećem retku, prvom stupcu, a ima vrijednost $0.77$. Gradijent se računa koristeći izraz \ref{eq:grad_softmax}.
+
+\begin{equation*}
+\setlength{\jot}{12pt}
+\begin{split}
+- \frac{\partial}{\partial w_{2, 0}} E(3, 0, 2)
+  & = \frac{\partial}{\partial w_{2, 0}} \left[R_3, R_0\right] W R_2^T
+ - \sum_{w \in |V|} P(w | 2, 0) \frac{\partial}{\partial w_{2, 0}} \left[R_3, R_0\right] W R_w^T \\
+  & = R_{0, 0} R_{2, 0} - \sum_{w \in |V|} P(w | 2, 0) R_{0, 0} R_{w, 0} \\
+  & = -0.067
+\end{split}
+\end{equation*}
+
+Na jednak način se dobivaju negativni gradijenti greške s obzirom na sve ostale parametre. Konačni gradijenti matrica $W$ i $R$ slijede.
+
+\[ \frac{\partial}{\partial R}E(3, 0, 2) = \left( \begin{array}{cc}
+-0.39 &  1.23 \\
+ 0.13 &  0.40 \\
+-0.31 & -0.95 \\
+ 0.46 & -0.52 \\
+ \end{array} \right),
+%
+\hspace{0.5cm} \frac{\partial}{\partial W}E(3, 0, 2) =
+\left( \begin{array}{cc}
+ 0.02 &  0.09 \\
+ 0.14 &  0.60 \\
+-0.07 & -0.29 \\
+-0.14 & -0.62
+\end{array} \right)
+\]
+
+Po definiciji algoritma propagacije greške unatrag se potom parametri modela mjenjaju u smjeru negativnog gradijenta greške. Ne koristi se cijeli iznos gradijenta, nego smanjena vrijednost. U ovom primjeru se parametri mjenjaju tako da se doda negativni gradijent pomnožen faktorom $0.05$. Nakon što su parametri modela promjenjeni, može se ponovno evaluirati vjerojatnosna distribucija riječi s obzirom na prethodni kontekst $3, 0$, kao i vrijednost greške.
+
+\begin{equation*}
+\setlength{\jot}{12pt}
+\begin{split}
+P(w | 3, 0), \forall w \in |V| & =
+\left[ \begin{array}{cccc} 0.30 & 0.19 & 0.19 & 0.32 \end{array} \right] \\
+E(3, 0, 2) & = - \ln \left( P(2 | 3, 0) \right) = 1.67
+\end{split}
+\end{equation*}
+
+Vidljivo je kako se vjerojatnost $P(2 | 3, 0)$ povećala, a time greška modela smanjila. Cilj učenja je na ovom jednostavnom primjeru postignut. Proces je identičan i u stvarnoj primjeni.
+
+\subsection{Mogućnost višestrukih reprezentacija}
 
 Specifičnost jezičnog log-bilinearnog modela je istovremeno učenje parametara linearne funkcije $W$ i $b$, te matrice reprezentacija vokabulara $R$, kao i u jezičnom modelu temeljenom na neuronskoj mreži. U log-bilinearnom modelu dodatno je zanimljivo što se matrica $R$ koristi na dva mjesta u funkciji. Prvo za dobivanje reprezentacija konteksta, a potom za podudarnost reduciranog konteksta sa svim riječima vokabulara. Smisleno je zapitati se bi li korištenje dviju matrica reprezentacija (jednu za prethodni kontekst, a drugu za uvjetovanu riječ) bilo prikladnije. Pogotovo jer postoje modeli koji idu tako daleko da za svaku riječ definiraju zasebnu matricu kompozicije s drugim riječima \cite{SocherEtAl2012:MVRNN}. Istovremeno, korištenje dviju matrica reprezentacija osjetno povećava parametarski prostor, što može otežati treniranje i rezultirati lošijim modelom. Zbog vremenskih ograničenja pokušaj učenja modela korištenjem dviju reprezentacijskih matrica nije isproban. U radu koji definira log-bilinearni model \cite{MnihH07} je korištena samo jedna, a pošto su dobiveni rezultati vrlo konkurentni drugim modelima, može se zaključiti da korištenje jedinstvene matrice $R$ funkcionira dobro.
 
@@ -685,6 +864,14 @@ U napretku jezičnih tehnologija, poput prepoznavanja govora i automatiziranog p
 
 \chapter{Sažetak}
 
-Teoretsko razmatranje nekoliko pristupa izgradnji jezičnih modela. Opis modela baziranih na zaglađenom prebrojavanju \textit{n}-grama, neuronskoj mreži bez skrivenih slojeva i log-bilinearnom modelu. Razmatranje teorijskih i implementacijskih posebnosti svakog modela. Vrednovavnje modela standardnim mjerama i po uspješnosti na zadatku Microsoft Research Sentence Completion.
+U ovom diplomskom radu razmatraju se četiri različita pristupa izgradnji jezičnih modela. U uvodu se daje kratak osvrt na moguće primjene jezičnih modela općenito. Potom se definiraju modeli bazirani na zaglađenom prebrojavanju \textit{n}-grama (korištenjem aditivnog zaglađivanja i zaglađivanja Kneser-Ney metodom), umjetnoj neuronskoj mreži bez skrivenih slojeva, log-bilinearnom modelu i ograničenom Boltzmannovom stroju. Razmatraju se teoretske i implementacijske posebnosti opisanih modela. Potom se modeli vrednuju standardnim mjerama i po uspješnosti na zadatku Microsoft Research Sentence Completion. Dobiveni rezultati se uspoređuju s rezultatima iz sličnih radova. Daje se kratko razmatranje vremenske i memorijske složenosti izrade i korištenja modela, kao i usporedba vremena treniranja korištenjem središnjih i grafičkih procesora.
+
+\textbf{Ključne riječi:} jezični model, obrada prirodnog jezika, zaglađivanje \textit{n}-grama, Kneser-Ney, neuronska mreža, log-bilinear, Microsoft Research Sentence Completion Challenge, raspodjeljene reprezentacije, grafički procesor, Cuda
+
+\subsection*{Abstract}
+
+This master thesis cosiders four approaches to language model implementation. An introduction into language models and their application is presented. Following are the definitions of models based on \textit{n}-gram counts with additive and Kneser-Ney smoothing, neural networks with no hidden layers, log-bilinear models and Restricted Boltzmann Machines. For each a theoretical description is given, as well implementation details. Models are evaluated using standard metrics and on Microsoft Research Sentence Completion Challenge. Results are compared to those from other papers. A brief comparison of model complexity (in time and memory space) is offered, as well as a comparison of iterative model training speed using central versus graphical processors.
+
+\textbf{Keywords:} language model, natural language processing, \textit{n}-gram smoothing, Kneser-Ney, neural networks, log-bilinear, Microsoft Research Sentence Completion Challenge, distributed representations, Word2Vec, GPU, Cuda
 
 \end{document}

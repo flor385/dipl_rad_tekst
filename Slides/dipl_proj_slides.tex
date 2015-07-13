@@ -63,15 +63,15 @@
 \frametitle{Prebrojavanje \textit{n}-grama}
 
 	\begin{block}{Primjerice trigrama}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Primjer: Škola je uskoro gotova.}
-		\item{Trigrami: (škola je), (je uskoro), (uskoro gotova)}
+		\item{Trigrami: (škola je uskoro), (je uskoro gotova)}
 		\item{$P(w_i | w_{i - 2}, w_{i - 1}) \propto C(w_{i - 2}, w_{i - 1}, w_i)$}
 	\end{itemize}
 	\end{block}
 
 	\begin{block}{Prednosti i nedostatci}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Jednostavan pristup}
 		\item{Brz za implementaciju, treniranje i primjenu}
 		\item{Rijetkost pojavljivanja onemogućava korištenje velikih $n$}
@@ -85,7 +85,7 @@
 \frametitle{Neuronska mreža}
 
 	\begin{block}{Definicija}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Unaprijedna mreža bez skrivenih slojeva}
 		\item{Po jedan izlazni neuron za svaku riječ vokabulara}
 		\item{Običan klasifikator, riječ je klasa}
@@ -94,7 +94,7 @@
 	\end{block}
 
 	\begin{block}{Prednosti i nedostatci}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Veliki parametarski prostor (veličina vokabulara)}
 		\item{Sporo treniranje, osrednji rezultati}
 	\end{itemize}
@@ -106,7 +106,7 @@
 \frametitle{Log-bilinearni model}
 
 	\begin{block}{Definicija}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Riječi predočene $d$-dimenzionalnim vektorima}
 		\item{Prethodnih $(n - 1)$ riječ daju $(n - 1) d$ vektor}
 		\item{Dobiveni vektor se množi matricom $W$, izlaz je $d$-dimenzionalni vektor}
@@ -115,7 +115,7 @@
 	\end{block}
 
 	\begin{block}{Prednosti i nedostatci}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Najbolji rezultati, riječ-vektori su nusprodukt}
 		\item{Jednostavna formulacija}
 		\item{Rezultati samo malo bolji od Kneser-Ney, puno sporije treniranje}
@@ -128,7 +128,7 @@
 \frametitle{Ograničeni Boltzmannov stroj}
 
 	\begin{block}{Definicija}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Riječi predočene $d$-dimenzionalnim vektorima}
 		\item{Jedan skriveni sloj stohastičkih binarnih neurona}
 		\item{Energija mreže definira uvjetnu vjerojatnost}
@@ -136,7 +136,7 @@
 	\end{block}
 
 	\begin{block}{Prednosti i nedostatci}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{Kompleksno i sporo treniranje stohastičkih neurona}
 		\item{Osrednji rezultati}
 	\end{itemize}
@@ -148,8 +148,8 @@
 \frametitle{Rezultati}
 
 	\begin{block}{Evaluacija mjerom perplexity}
-	\begin{itemize}
-		\item{$\exp \left( \frac{1}{N} \ln P(w | ...) \right)$}
+	\begin{itemize}[<+->]
+		\item{$\exp \left( - \frac{1}{N} \sum_{x \in X} \ln P(x | ...) \right)$}
 		\item{Manje je bolje}
 		\item{Jako ovisi o vokabularu, korpusu; samo za relativnu usporedbu}
 	\end{itemize}
@@ -178,7 +178,7 @@
 \frametitle{Rezultati}
 
 	\begin{block}{Trajanje treniranja}
-	\begin{itemize}
+	\begin{itemize}[<+->]
 		\item{CPU: Intel i7, 3.5GHz, 4 jezgre, 8 dretvi}
 		\item{GPU: Nvidia GTX 960M, 4GB, 640 jezgara}
 	\end{itemize}

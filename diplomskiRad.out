@@ -6,18 +6,35 @@
 \BOOKMARK [0][-]{chapter.3}{Prebrojavanje n-grama}{}% 6
 \BOOKMARK [1][-]{section.3.1}{Zaglaivanje}{chapter.3}% 7
 \BOOKMARK [2][-]{subsection.3.1.1}{Aditivno zaglaivanje}{section.3.1}% 8
-\BOOKMARK [1][-]{section.3.2}{Implementacija}{chapter.3}% 9
-\BOOKMARK [0][-]{chapter.4}{Neuronske mre\236e}{}% 10
-\BOOKMARK [0][-]{chapter.5}{Ograniceni Boltzmannov stroj}{}% 11
-\BOOKMARK [1][-]{section.5.1}{Ucenje}{chapter.5}% 12
-\BOOKMARK [1][-]{section.5.2}{Implementacija}{chapter.5}% 13
-\BOOKMARK [0][-]{chapter.6}{Log-bilinearni model}{}% 14
-\BOOKMARK [1][-]{section.6.1}{Ucenje}{chapter.6}% 15
-\BOOKMARK [1][-]{section.6.2}{Implementacija}{chapter.6}% 16
-\BOOKMARK [0][-]{chapter.7}{Evaluacija}{}% 17
-\BOOKMARK [1][-]{section.7.1}{Kori\235teni podatci}{chapter.7}% 18
-\BOOKMARK [1][-]{section.7.2}{Nacin evaluacije}{chapter.7}% 19
-\BOOKMARK [1][-]{section.7.3}{Rezultati}{chapter.7}% 20
-\BOOKMARK [0][-]{chapter.8}{Zakljucak}{}% 21
-\BOOKMARK [0][-]{chapter*.2}{Literatura}{}% 22
-\BOOKMARK [0][-]{chapter.9}{Sa\236etak}{}% 23
+\BOOKMARK [2][-]{subsection.3.1.2}{Zaglaivanje Kneser-Ney metodom}{section.3.1}% 9
+\BOOKMARK [1][-]{section.3.2}{Implementacija}{chapter.3}% 10
+\BOOKMARK [0][-]{chapter.4}{Neuronska mre\236a}{}% 11
+\BOOKMARK [1][-]{section.4.1}{Ulaz u mre\236u}{chapter.4}% 12
+\BOOKMARK [2][-]{subsection.4.1.1}{Rijec kao redni broj}{section.4.1}% 13
+\BOOKMARK [2][-]{subsection.4.1.2}{Binarni vektor}{section.4.1}% 14
+\BOOKMARK [2][-]{subsection.4.1.3}{Distribuirane reprezentacije}{section.4.1}% 15
+\BOOKMARK [1][-]{section.4.2}{Definicija mre\236e}{chapter.4}% 16
+\BOOKMARK [1][-]{section.4.3}{Ucenje}{chapter.4}% 17
+\BOOKMARK [1][-]{section.4.4}{Slo\236enost mre\236e}{chapter.4}% 18
+\BOOKMARK [1][-]{section.4.5}{Implementacija}{chapter.4}% 19
+\BOOKMARK [0][-]{chapter.5}{Log-bilinearni model}{}% 20
+\BOOKMARK [1][-]{section.5.1}{Log-bilinearni jezicni model}{chapter.5}% 21
+\BOOKMARK [1][-]{section.5.2}{Ucenje}{chapter.5}% 22
+\BOOKMARK [1][-]{section.5.3}{Slo\236enost modela}{chapter.5}% 23
+\BOOKMARK [1][-]{section.5.4}{Implementacija}{chapter.5}% 24
+\BOOKMARK [0][-]{chapter.6}{Ograniceni Boltzmannov stroj}{}% 25
+\BOOKMARK [1][-]{section.6.1}{Jezicni model temeljen na RBMu}{chapter.6}% 26
+\BOOKMARK [1][-]{section.6.2}{Ucenje}{chapter.6}% 27
+\BOOKMARK [1][-]{section.6.3}{Implementacija}{chapter.6}% 28
+\BOOKMARK [0][-]{chapter.7}{Vrednovanje}{}% 29
+\BOOKMARK [1][-]{section.7.1}{Metodologija}{chapter.7}% 30
+\BOOKMARK [1][-]{section.7.2}{Mjera uspje\235nosti jezicnog modela}{chapter.7}% 31
+\BOOKMARK [1][-]{section.7.3}{Korpus}{chapter.7}% 32
+\BOOKMARK [1][-]{section.7.4}{Pretprocesiranje i normalizacija teksta}{chapter.7}% 33
+\BOOKMARK [1][-]{section.7.5}{Rezultati}{chapter.7}% 34
+\BOOKMARK [2][-]{subsection.7.5.1}{Vrednovanje mjerom perplexity}{section.7.5}% 35
+\BOOKMARK [2][-]{subsection.7.5.2}{Uspje\235nost modela na MRSCC zadatku}{section.7.5}% 36
+\BOOKMARK [2][-]{subsection.7.5.3}{Trajanje treniranja}{section.7.5}% 37
+\BOOKMARK [0][-]{chapter.8}{Zakljucak}{}% 38
+\BOOKMARK [0][-]{chapter*.8}{Literatura}{}% 39
+\BOOKMARK [0][-]{chapter.9}{Sa\236etak}{}% 40

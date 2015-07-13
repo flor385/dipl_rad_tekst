@@ -414,8 +414,6 @@ Matrica distribuiranih reprezentacija $R$ sadrži $|V| d$ parametara, matrica pr
 
 Vremensku složenost treniranja i korištenja modela isto tako je teško procjeniti, kao i kod neuronske mreže. Trajanje treniranja modela svakako ovisi o broju parametara, pa je aproksimacija vremenske složenosti kao $O(d |V|)$ opravdana, i opet $n$ puta manja od vremenske složenosti treniranja neuronske mreže.
 
-Još jedna zanimljivost ovog modela je da je vremenska složenost korištenja modela vjerojatno još povoljnija. Pri treniranju se matrica $R$ optimira kao i ostali parametri, ali pri korištenju služi samo za pohranu distribuiranih reprezentacija. One se dobivaju iz matrice $R$ indeksiranjem prikladnog retka, što je vrlo jeftina operacija. Računske operacije pri korištenju modela se sve dešavaju u prostoru parametara koji ovisi samo o veličini reprezentacije $d$ i veličini konteksta $n$. Ne ovisi o veličini vokabulara. Stoga korištenje modela ima vremensku složenost $O(n d)$, osjetno manje od vremenske složenosti korištenja neuronske mreže, aproksimirane s $O(n d |V|)$.
-
 \section{Implementacija}
 
 Log-bilinearni model malo je manje uobičajen od unaprijednih neuronskih mreža. Nisu poznati alati koji bi omogućili definiranje takvog modela na visokoj razini apstrakcije dostupnoj za neuronske mreže, ali su alati za numeričku optimizaciju malo niže razine apstrakcije svejednako od velike koristi. Konkretno, postoji više komercijalnih i besplatnih alata koji omogućavaju jednostavnu simboličku definiciju log-bilinearnog modela, te automatizirani izračun gradijenata i optimizirani proces treniranja.

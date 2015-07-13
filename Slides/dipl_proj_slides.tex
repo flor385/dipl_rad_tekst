@@ -1,0 +1,133 @@
+\documentclass[utf8]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% \usecolortheme{crane}
+
+\begin{document}
+
+\title{Jezični model temeljen na neuronskoj mreži}
+\author{Florijan Stamenković \\
+	Mentor: Marko Čupić}
+\institute{Fakultet elektrotehnike i računarstva \\
+	Sveučilište u Zagrebu}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Jezični model}
+
+	\pause
+
+	\begin{block}{Smislene rečenice}
+	Petar ide u dućan. Danas je lijep dan.
+	\end{block}
+
+	\pause
+
+	\begin{block}{Besmislene rečenice}
+	Gavran tanges jučer zelen dva.
+	\end{block}
+
+	\pause
+
+	\begin{block}{Matematička (probabilistička) definicija}
+	$P(polje | Petar, ide, u) > P(vilica | Petar, ide, u)$ \\
+	$P(w_i | w_0, w_1, ..., w_{i - 1})$
+	\end{block}
+
+	\pause
+
+	\begin{block}{Aproksimacija korištenjem $(n - 1)$ prethodnih riječi}
+	$P(w_i | w_{i - n + 1}, ... , w_{i - 1}) \approx P(w_i | w_0, w_1, ..., w_{i - 1})$
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Jezični model}
+
+	\begin{block}{Primjene}
+	\begin{itemize}[<+->]
+		\item{Automatsko prevođenje}
+		\item{Prepoznavanje govora}
+		\item{Ispravka pogreški u pisanju}
+		\item{Klasifikacija teksta}
+		\item{...}
+	\end{itemize}
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Prebrojavanje \textit{n}-grama}
+
+	\begin{block}{Primjerice trigrama}
+	\begin{itemize}
+		\item{Primjer: Škola je uskoro gotova.}
+		\item{Trigrami: (škola je), (je uskoro), (uskoro gotova)}
+		\item{$P(w_i | w_{i - 2}, w_{i - 1}) \propto C(w_{i - 2}, w_{i - 1}, w_i)$}
+	\end{itemize}
+	\end{block}
+
+	\begin{block}{Prednosti i nedostatci}
+	\begin{itemize}
+		\item{Jednostavan pristup}
+		\item{Brz za implementaciju, treniranje i primjenu}
+		\item{Rijetkost pojavljivanja onemogućava korištenje velikih $n$}
+		\item{Potrebno dobro (Kneser-Ney) zaglađivanje da bi radilo}
+	\end{itemize}
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Neuronska mreža}
+
+	\begin{block}{Definicija}
+	\begin{itemize}
+		\item{Unaprijedna mreža bez skrivenih slojeva}
+		\item{Po jedan izlazni neuron za svaku riječ vokabulara}
+		\item{Običan klasifikator, riječ je klasa}
+		\item{Riječi predočavane $d$-dimenzionalnim vektorima}
+	\end{itemize}
+	\end{block}
+
+	\begin{block}{Prednosti i nedostatci}
+	\begin{itemize}
+		\item{Veliki parametarski prostor (veličina vokabulara)}
+		\item{Sporo treniranje, osrednji rezultati}
+	\end{itemize}
+	\end{block}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Log-bilinearni model}
+
+	\begin{block}{Definicija}
+	\begin{itemize}
+		\item{Riječi predočene $d$-dimenzionalnim vektorima}
+		\item{Prethodnih $(n - 1)$ riječ daju $(n - 1) d$ vektor}
+		\item{Dobiveni vektor se množi matricom $W$, izlaz je $d$-dimenzionalni vektor}
+		\item{Sličnost izlaznog vektora definira vjerojatnost riječi}
+	\end{itemize}
+	\end{block}
+
+	\begin{block}{Prednosti i nedostatci}
+	\begin{itemize}
+		\item{Najbolji rezultati, riječ-vektori su nusprodukt}
+		\item{Jednostavna formulacija}
+		\item{Rezultati samo malo bolji od Kneser-Ney, puno sporije treniranje}
+	\end{itemize}
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+	Demo
+	
+\end{frame}
+
+% etc
+\end{document}

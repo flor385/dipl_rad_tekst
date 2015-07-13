@@ -1,0 +1,216 @@
+\documentclass[utf8]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+% \usecolortheme{crane}
+
+\begin{document}
+
+\title{Jezični model temeljen na neuronskoj mreži}
+\author{Florijan Stamenković \\
+	Mentor: Marko Čupić}
+\institute{Fakultet elektrotehnike i računarstva \\
+	Sveučilište u Zagrebu}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Jezični model}
+
+	\pause
+
+	\begin{block}{Smislene rečenice}
+	Petar ide u dućan. Danas je lijep dan.
+	\end{block}
+
+	\pause
+
+	\begin{block}{Besmislene rečenice}
+	Gavran tanges jučer zelen dva.
+	\end{block}
+
+	\pause
+
+	\begin{block}{Matematička (probabilistička) definicija}
+	$P(polje | Petar, ide, u) > P(vilica | Petar, ide, u)$ \\
+	$P(w_i | w_0, w_1, ..., w_{i - 1})$
+	\end{block}
+
+	\pause
+
+	\begin{block}{Aproksimacija korištenjem $(n - 1)$ prethodnih riječi}
+	$P(w_i | w_{i - n + 1}, ... , w_{i - 1}) \approx P(w_i | w_0, w_1, ..., w_{i - 1})$
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Jezični model}
+
+	\begin{block}{Primjene}
+	\begin{itemize}[<+->]
+		\item{Automatsko prevođenje}
+		\item{Prepoznavanje govora}
+		\item{Ispravka pogreški u pisanju}
+		\item{Klasifikacija teksta}
+		\item{...}
+	\end{itemize}
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Prebrojavanje \textit{n}-grama}
+
+	\begin{block}{Primjerice trigrama}
+	\begin{itemize}
+		\item{Primjer: Škola je uskoro gotova.}
+		\item{Trigrami: (škola je), (je uskoro), (uskoro gotova)}
+		\item{$P(w_i | w_{i - 2}, w_{i - 1}) \propto C(w_{i - 2}, w_{i - 1}, w_i)$}
+	\end{itemize}
+	\end{block}
+
+	\begin{block}{Prednosti i nedostatci}
+	\begin{itemize}
+		\item{Jednostavan pristup}
+		\item{Brz za implementaciju, treniranje i primjenu}
+		\item{Rijetkost pojavljivanja onemogućava korištenje velikih $n$}
+		\item{Potrebno dobro (Kneser-Ney) zaglađivanje da bi radilo}
+	\end{itemize}
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Neuronska mreža}
+
+	\begin{block}{Definicija}
+	\begin{itemize}
+		\item{Unaprijedna mreža bez skrivenih slojeva}
+		\item{Po jedan izlazni neuron za svaku riječ vokabulara}
+		\item{Običan klasifikator, riječ je klasa}
+		\item{Riječi predočavane $d$-dimenzionalnim vektorima}
+	\end{itemize}
+	\end{block}
+
+	\begin{block}{Prednosti i nedostatci}
+	\begin{itemize}
+		\item{Veliki parametarski prostor (veličina vokabulara)}
+		\item{Sporo treniranje, osrednji rezultati}
+	\end{itemize}
+	\end{block}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Log-bilinearni model}
+
+	\begin{block}{Definicija}
+	\begin{itemize}
+		\item{Riječi predočene $d$-dimenzionalnim vektorima}
+		\item{Prethodnih $(n - 1)$ riječ daju $(n - 1) d$ vektor}
+		\item{Dobiveni vektor se množi matricom $W$, izlaz je $d$-dimenzionalni vektor}
+		\item{Sličnost izlaznog vektora definira vjerojatnost riječi}
+	\end{itemize}
+	\end{block}
+
+	\begin{block}{Prednosti i nedostatci}
+	\begin{itemize}
+		\item{Najbolji rezultati, riječ-vektori su nusprodukt}
+		\item{Jednostavna formulacija}
+		\item{Rezultati samo malo bolji od Kneser-Ney, puno sporije treniranje}
+	\end{itemize}
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Ograničeni Boltzmannov stroj}
+
+	\begin{block}{Definicija}
+	\begin{itemize}
+		\item{Riječi predočene $d$-dimenzionalnim vektorima}
+		\item{Jedan skriveni sloj stohastičkih binarnih neurona}
+		\item{Energija mreže definira uvjetnu vjerojatnost}
+	\end{itemize}
+	\end{block}
+
+	\begin{block}{Prednosti i nedostatci}
+	\begin{itemize}
+		\item{Kompleksno i sporo treniranje stohastičkih neurona}
+		\item{Osrednji rezultati}
+	\end{itemize}
+	\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Rezultati}
+
+	\begin{block}{Evaluacija mjerom perplexity}
+	\begin{itemize}
+		\item{$\exp \left( \frac{1}{N} \ln P(w | ...) \right)$}
+		\item{Manje je bolje}
+		\item{Jako ovisi o vokabularu, korpusu; samo za relativnu usporedbu}
+	\end{itemize}
+	\end{block}
+
+
+	\begin{table}[htb]
+	\centering
+	\begin{tabular}{lccc}
+	\toprule
+	 & \multicolumn{3}{c}{Parametar \textit{n}} \\
+	\cmidrule(r){2-4}
+	Model & 3 & 4 & 5 \\
+	\midrule
+	Additivno &  305 & 1182 & 2680 \\
+	Kneser-Ney & 72 & 121 & 204 \\
+	Neuronska mreža & 117 & 114 & 113 \\
+	Log-bilinear & 102 & 98 & 98 \\
+	\bottomrule
+	\end{tabular}
+	\end{table}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Rezultati}
+
+	\begin{block}{Trajanje treniranja}
+	\begin{itemize}
+		\item{CPU: Intel i7, 3.5GHz, 4 jezgre, 8 dretvi}
+		\item{GPU: Nvidia GTX 960M, 4GB, 640 jezgara}
+	\end{itemize}
+	\end{block}
+
+
+	\begin{table}[htb]
+	\caption{Trajanje treniranja modela, izraženo u SAT:MINUTE obliku.}
+	\label{tbl:eval_time}
+	\centering
+	\begin{tabular}{lccc}
+	\toprule
+	 & \multicolumn{3}{c}{Parametar \textit{n}} \\
+	\cmidrule(r){2-4}
+	Model & 3 & 4 & 5 \\
+	\midrule
+	Prebrojavanje \textit{n}-grama CPU &  0:01 & 0:01 & 0.01 \\
+	Neuronska mreža, GPU & 1:47 & 2:15 & 2:17 \\
+	Neuronska mreža, CPU & 13:38 & 13:52 & 14.20 \\
+	Log-bilinear GPU & 0:49 & 0:48 & 0:46 \\
+	Log-bilinear CPU & 8:07 & 8:01 & 6:56 \\
+	\bottomrule
+	\end{tabular}
+	\end{table}
+
+\end{frame}
+
+\begin{frame}
+
+	Demo i kraj
+	
+\end{frame}
+
+% etc
+\end{document}

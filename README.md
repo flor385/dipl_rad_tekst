@@ -8,7 +8,6 @@ This repository consists of the Latex formatted master's thesis in which multipl
 - Knesser-Ney smoothed n-gram models
 - neural network models
 - log-bilinear language models (Mnih, Hinton, 2008.)
-- 
 
 The thesis is written in Croatian. The actual models are contained in another repository:
 https://github.com/flor385/masters_thesis_code
